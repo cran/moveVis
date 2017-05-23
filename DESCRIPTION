@@ -1,9 +1,9 @@
 Package: moveVis
 Type: Package
 Title: Movement Data Visualization
-Version: 0.9
+Version: 0.9.1
 Depends: R (>= 2.10)
-Date: 2017-04-28
+Date: 2017-05-23
 Authors@R: person("Jakob", "Schwalb-Willmann", email = "movevis@schwalb-willmann.de",
   role = c("aut", "cre"))
 Description: Tools to visualize movement data of any kind, e. g by creating path animations from GPS point data.
@@ -13,8 +13,8 @@ Imports: animation, xts, maptools, ggplot2, grid, rasterVis, raster,
         sp, geosphere, dismo, utils, grDevices, methods, stats, move,
         RCurl
 NeedsCompilation: no
-Packaged: 2017-05-18 10:46:15 UTC; jakob
+Packaged: 2017-05-23 00:13:48 UTC; jakob
 Author: Jakob Schwalb-Willmann [aut, cre]
 Maintainer: Jakob Schwalb-Willmann <movevis@schwalb-willmann.de>
 Repository: CRAN
-Date/Publication: 2017-05-18 11:33:45 UTC
+Date/Publication: 2017-05-23 03:41:40 UTC
