@@ -62,6 +62,7 @@
 #' @importFrom utils head
 #' @importFrom methods is
 #' @importFrom stats approxfun
+#' @importFrom graphics plot
 #' @export
 
 animate_raster <- function(layer, out_dir, conv_dir = "convert", layer_type = "", layer_col = c("sandybrown","white","darkgreen"), layer_nacol = "white", 
@@ -394,7 +395,7 @@ animate_raster <- function(layer, out_dir, conv_dir = "convert", layer_type = ""
   if(map_elements == TRUE){
     if(layer_type == "gradient"){
       plt_fin <- paste0('quiet(plot(gplot(rbl[[i]]) + geom_tile(aes_(fill = ~value)) +
-                          scale_fill_gradientn(colours = layer_col, ',plt_limits,', guide=guide_colourbar(title = legend_title, label.vjust = 0.9, title.hjust = 0, title.vjust = 0)) +
+                          scale_fill_gradientn(colours = layer_col, ',plt_limits,', na.value = layer_nacol, guide=guide_colourbar(title = legend_title, label.vjust = 0.9, title.hjust = 0, title.vjust = 0)) +
                           scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) + theme(aspect.ratio=1) +',
                         plt_scale_north,"+",plt_progress)
     }
