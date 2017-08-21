@@ -8,13 +8,13 @@ animate_stats(data_ani, out_dir, conv_dir = "convert", layer = "basemap",
   layer_dt = "basemap", layer_int = FALSE, layer_type = "",
   val_limits = NA, paths_col = "auto", paths_mode = "true_data",
   stats_type = "", stats_gg = "", stats_digits = 1, stats_tframe = 5,
-  stats_lay = 0, stats_title = "", frames_nmax = 0,
+  stats_title = "", frames_layout = 0, frames_nmax = 0,
   frames_interval = 0.04, frames_nres = 1, frames_width = 600,
   frames_height = 600, out_name = "final_gif", log_level = 1,
-  log_logical = FALSE)
+  log_logical = FALSE, ...)
 }
 \arguments{
-\item{data_ani}{list or \code{moveStack} class object. Needs to contain one or several \code{move} class objects (one for each individual path to be displayed) containing point coordinates, timestamps and projection.}
+\item{data_ani}{list or \code{moveStack} class object. Needs to contain one or several \code{move} class objects (one for each individual path to be displayed) containing point coordinates, timestamps, projection and individual ID.}
 
 \item{out_dir}{character. Output directory for the GIF file creation.}
 
@@ -42,9 +42,9 @@ animate_stats(data_ani, out_dir, conv_dir = "convert", layer = "basemap",
 
 \item{stats_tframe}{numeric. Defines the temporal range of the periodic stats plot. Default is 5 meaning that five time frames back from the displayed frame are evaluated.}
 
-\item{stats_lay}{matrix. Optional layout. Based on the \code{\link{grid.arrange}} syntax.}
-
 \item{stats_title}{character vector. Optional plot titles. Two character strings within a vector.}
+
+\item{frames_layout}{matrix. Optional layout. Define, which plots should be placed where using a matrix represnting the GIF frame. Matrix elements can be the following plot identifiers: "map" for the spatial plot, "st_all", "st_per" for the overall and periodic stats plot or "st_allR", "st_perR", "st_allG", "st_perG", "st_allB", "st_perB" for the overall and periodic stats plots per band, when using \code{layer_type = "RGB"}, and 'st_leg' for a stats legend. Alternatively, integers from 1 to 8 corresponding to the described order can be used. Plots not mentioned using \code{frames_layout} identifiers are not displayed. If set to 0, layout is generated automatically. Default is 0.}
 
 \item{frames_nmax}{numeric. Number of maximum frames. If set, the animation will be stopped, after the specified number of frames is reached. Default is 0 (displaying all frames).}
 
@@ -65,7 +65,7 @@ animate_stats(data_ani, out_dir, conv_dir = "convert", layer = "basemap",
 \item{...}{optional arguments.}
 }
 \value{
-None or logical (see \code{log_logical}. The output GIF file is written to the ouput directory.
+None or logical (see \code{log_logical}). The output GIF file is written to the ouput directory.
 }
 \description{
 \code{animate_stats} animates statistic plot from movement data provided as \code{move} class objects or a list of them and basemap data provided as \code{raster}. It extracts basemap values of pixels that are part of the movement paths and visualizes frequencies per value. The function creates an animated GIF file and saves it into the output directory. See also \code{\link{animate_move}}.
@@ -75,6 +75,7 @@ None or logical (see \code{log_logical}. The output GIF file is written to the o
 Use \code{stats_gg} to provide an own ggplot2 plot design as shown in the examples. The statistics are stored for both plots (periodic and accumulated) withn the variable \code{pdat} (list of two, indexed by k ranging from 1 to 2 for each plot). Both \code{pdat} lists contain the stats elements framewise for each time step. For this, see the \code{stats_gg} example. The variable \code{cols} (list of two, one per plot) contains the defined colour values and namings.
 }
 \examples{
+\dontrun{
 #Load move and moveVis packages
 library(move)
 library(moveVis)
@@ -83,34 +84,11 @@ library(moveVis)
 data("move_data")
 move_data$dt <- as.POSIXct(strptime(move_data$dt, "\%Y-\%m-\%d \%H:\%M:\%S", tz = "UTC"))
 
-#Differentiate data per individual
-indi_levels <- levels(move_data$individual)
-indi_levels_n <- length(indi_levels)
-for(i in 1:indi_levels_n){
-  if(i == 1){
-    indi_subset <- list(subset(move_data, individual == indi_levels[i]))
-  }else{
-    indi_subset <- c(indi_subset,list(subset(move_data,
-                               individual == indi_levels[i])))
-  }
-}
-indi_names <- paste(indi_levels, collapse = ", ")
-
-#Create move class object
-for(i in 1:length(indi_subset)){
-  if(i == 1){
-     data_ani <- list(move(x=indi_subset[[i]]$lon,y=indi_subset[[i]]$lat,
-                                 time=indi_subset[[i]]$dt,
-                                 proj=CRS("+proj=longlat +ellps=WGS84"),
-                                 animal=indi_levels[i]))
-  }else{
-     data_ani[i] <- list(move(x=indi_subset[[i]]$lon,y=indi_subset[[i]]$lat,
-                                 time=indi_subset[[i]]$dt,
-                                 proj=CRS("+proj=longlat +ellps=WGS84"),
-                                 animal=indi_levels[i]))}
-}
-
-#Load basemap data (MODIS NDVI)
+#Create moveStack object including multiple individuals
+data_ani <- move(move_data$lon, move_data$lat, proj=CRS("+proj=longlat +ellps=WGS84"),
+                 time = move_data$dt, animal=move_data$individual, data=move_data)
+ 
+#Load basemap MODIS NDVI data
 data("basemap_data")
 layer = basemap_data[[1]]
 layer_dt = basemap_data[[2]]
@@ -118,8 +96,12 @@ layer_dt = basemap_data[[2]]
 #Find command or directory to convert tool of ImageMagick
 conv_dir <- get_imconvert()
 
-#Specify output directory
+#Specify the output directory, e.g.
 out_dir <- "/out/test"
+#or to a temporary directory:
+out_dir <- paste0(tempdir(),"/test")
+dir.create(out_dir)
+
 
 #Call animate_stats()
 animate_stats(data_ani, out_dir, conv_dir = conv_dir,
@@ -143,6 +125,7 @@ animate_stats(data_ani, out_dir, conv_dir = conv_dir,
               layer=layer, layer_dt = layer_dt, layer_type = "gradient",
               stats_digits = 1, stats_gg = stats_gg, out_name = "final_gif",
               log_level = 1,frames_nmax = 60)
+}
 
 }
 \seealso{

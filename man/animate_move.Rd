@@ -6,37 +6,45 @@
 \usage{
 animate_move(data_ani, out_dir, conv_dir = "convert", layer = "basemap",
   layer_dt = "basemap", layer_int = FALSE, layer_type = "",
-  layer_col = c("sandybrown", "white", "darkgreen"), layer_nacol = "white",
-  map_type = "satellite", extent_factor = 1e-04, tail_elements = 10,
+  layer_stretch = "none", layer_col = c("sandybrown", "white", "darkgreen"),
+  layer_nacol = "white", map_type = "satellite", static_data = NA,
+  static_gg = NA, extent_factor = 1e-04, tail_elements = 10,
   tail_size = 4, img_title = "title", img_sub = "subtitle",
   img_caption = "caption", img_labs = "labs", legend_title = "",
   legend_limits = NA, legend_labels = "auto", map_elements = TRUE,
-  scalebar_col = "white", north_col = "white", paths_col = "auto",
-  paths_alpha = 1, paths_mode = "true_data", stats_create = FALSE,
-  frames_nmax = 0, frames_interval = 0.04, frames_nres = 1,
-  frames_width = NA, frames_height = NA, out_name = "final_gif",
-  log_level = 1, log_logical = FALSE, ...)
+  time_scale = TRUE, scalebar_col = "white", north_col = "white",
+  paths_col = "auto", paths_alpha = 1, paths_mode = "true_data",
+  stats_create = FALSE, frames_layout = 0, frames_nmax = 0,
+  frames_interval = 0.04, frames_nres = 1, frames_width = NA,
+  frames_height = NA, out_name = "final_gif", log_level = 1,
+  log_logical = FALSE, ..., conv_cmd = "auto", conv_frames = 100)
 }
 \arguments{
-\item{data_ani}{list or \code{moveStack} class object. Needs to contain one or several \code{move} class objects (one for each individual path to be displayed) containing point coordinates, timestamps and projection.}
+\item{data_ani}{list or \code{moveStack} class object. Needs to contain one or several \code{move} class objects (one for each individual path to be displayed) containing point coordinates, timestamps, projection and individual ID.}
 
 \item{out_dir}{character. Output directory for the GIF file creation.}
 
 \item{conv_dir}{character. Command or directory to call the ImageMagick convert tool (default to be \code{convert}). You can use \code{conv_dir = get_imconvert()} to search for the right command/tool directory and/or get the required software.}
 
-\item{layer}{raster, list or character. Single raster object or list of raster objects to be used as (dynamically changing) basemap layer. Default is \code{"basemap"} to download a static basemap layer. Use a rasterBrick class object and set layer_type to "\code{RGB}" to compute a RGB basemap.}
+\item{layer}{raster, list or character "basemap". Single raster object or list of raster objects to be used as (dynamically changing) basemap layer. Default is \code{"basemap"} to download a static basemap layer. Use a rasterBrick class object and set layer_type to "\code{RGB}" to compute a RGB basemap.}
 
 \item{layer_dt}{POSIXct or list. Single POSIXct date/time stamp or list of POSIXct date/time stamps corresponding to the acquisition dates of the \code{layer} raster objects.}
 
 \item{layer_int}{logical. Whether to interpolate the basemap layer objects over time, if several are provided (\code{TRUE}), or to display them one after another depending on the animation time frame that is displayed (\code{FALSE}). Default is \code{FALSE}.}
 
-\item{layer_type}{charachter. Layer type. Can be either "\code{RGB}" (if layer is a rasterBrick class onejct), "\code{gradient}" or "\code{discrete}". Default is "\code{RGB}". Ignored, if \code{layer = "basemap"}.}
+\item{layer_type}{charachter. Layer type. Either "\code{RGB}" (if layer is a rasterBrick class onejct), "\code{gradient}" or "\code{discrete}". Default is "\code{RGB}". Ignored, if \code{layer = "basemap"}.}
+
+\item{layer_stretch}{character. Ignored, if \code{layer_type} is not "RGB". Either "none", "lin", "hist", "sqrt" or "log" for no stretch, linear, histogram, square-root or logarithmic stretch. Default is "none".}
 
 \item{layer_col}{character vector.  Two or more colours to be used for displaying the background layer. If \code{layer_type = "gradient"}, a colour ramp between the colous is calcualted. If \code{layer_type = "discrete"}, the colours will be used per value range. Ignored, if \code{layer_type = "RGB"}.}
 
 \item{layer_nacol}{character. Colour to be displayed for NA values. Default is "white".}
 
 \item{map_type}{character.  Static basemap type. Chosse from "roadmap", "satellite", "hybrid", "terrain".}
+
+\item{static_data}{data.frame. Data (e.g. static points) to be displayed within the spatial plot of the GIF output. At least, "x", "y" columns for the coordinates and "names" for the naming of the point have to be included. If "static_gg" remains unspecified, "static_data" is plottet as points to the output map, annotated with their namings. Points outside the frame extent are not displayed. See "static_gg" for further options.}
+
+\item{static_gg}{character. One or several \code{ggplot2} functions, concatenated by "+" specifying how "static_data" should be displayed, e.g. using \code{geom_point} and \code{geom_text} for displaying points annotated with text. \code{ggplot2 data} and \code{aes, aes_} arguments etc. need to referr to the columns specified in "static_data". As default, "static_data" is plotted as \code{geom_point} and \code{geom_label}.}
 
 \item{extent_factor}{numeric. Defines the distance between the spatial extents of the movement data set and the basemap as proportion of the axis distance. Default is 0.0001. The higher the value, the larger the basemap extent. Ignored, if \code{layer} = "basemap".}
 
@@ -60,6 +68,8 @@ animate_move(data_ani, out_dir, conv_dir = "convert", layer = "basemap",
 
 \item{map_elements}{logical. If \code{FALSE}, map elements (north arrow and scale bar) are hidden. Default is \code{TRUE}.}
 
+\item{time_scale}{logical. If\code{FALSE}, time scale is hidden. Default is \code{TRUE}.}
+
 \item{scalebar_col}{character. Colour of the scalebar text. Default is "white".}
 
 \item{north_col}{character. Colour of the north arrow. Default is "white".}
@@ -71,6 +81,8 @@ animate_move(data_ani, out_dir, conv_dir = "convert", layer = "basemap",
 \item{paths_mode}{character vector. Mode to be used for dealing with time information when displaying multiple individual paths. If set to "true_data", paths are displayed based on true coverage times, showing only time periods that are covered. Time gaps will be skipped. Each frame is linked to a specific true time. If set to "true_time",  paths are displayed based on true coverage times. Time gaps will be filled with non-movement frames. This mode is only recommended, if the dataset has no time gaps. Each frame is linked to a specific, true time. If set to "simple", all movement paths are displayed individually with no regard to the true coverage times. Time gaps will be skipped. Each frame displays several times at once, since each individual path has its own time. Default is "true_data".}
 
 \item{stats_create}{logical. \code{TRUE} to create statistic plots side by side with the spatial plot. Use the arguments explained for \code{\link{animate_stats}} to adjust the plotting behaviour. Default is \code{FALSE}.}
+
+\item{frames_layout}{matrix. Optional layout. Define, which plots should be placed where using a matrix represnting the GIF frame. Matrix elements can be the following plot identifiers: "map" for the spatial plot, "st_all", "st_per" for the overall and periodic stats plot or "st_allR", "st_perR", "st_allG", "st_perG", "st_allB", "st_perB" for the overall and periodic stats plots per band, when using \code{layer_type = "RGB"}, and 'st_leg' for a stats legend. Alternatively, integers from 1 to 8 corresponding to the described order can be used. Plots not mentioned using \code{frames_layout} identifiers are not displayed. If set to 0, layout is generated automatically. Default is 0.}
 
 \item{frames_nmax}{numeric. Number of maximum frames. If set, the animation will be stopped, after the specified number of frames is reached. Default is 0 (displaying all frames).}
 
@@ -89,9 +101,13 @@ animate_move(data_ani, out_dir, conv_dir = "convert", layer = "basemap",
 \item{log_logical}{logical. For large processing schemes. If \code{TRUE}, the function returns \code{TRUE} when finished processing succesfully.}
 
 \item{...}{optional arguments. All arguments taken by \code{\link{animate_stats}} can be handed over to \code{\link{animate_move}} as well to create sidy-by-side spatial and statistic plot animations (see \code{\link{animate_stats}}).}
+
+\item{conv_cmd}{character. Recommended for expert use only. Passes additional command line options to the convert command such as '-limit' for memory ressource handling. This does not affect the GIF creation from frames, but the final GIF assembling from multiple temporary GIF segments. For details, see \url{https://www.imagemagick.org/script/command-line-options.php}.}
+
+\item{conv_frames}{numeric. Recommended for expert use only. Number of frames to be used for creating GIF segments that will be assembled to a final GIF file. Correct number depends on system performance and total frames number. Default is 100.}
 }
 \value{
-None or logical (see \code{log_logical}. The output GIF file is written to the ouput directory.
+None or logical (see \code{log_logical}). The output GIF file is written to the ouput directory.
 }
 \description{
 \code{animate_move} animates movement data provided as \code{move} class objects or a list of them. The function creates an animated GIF file and saves it into the output directory. \code{animate_move} can be operated in different timing modes (see \code{paths_mode}) and with different background layer types (see \code{layer}, \code{layer_type} and \code{map_type}).
@@ -100,57 +116,94 @@ None or logical (see \code{log_logical}. The output GIF file is written to the o
 \code{animate_move} is based on \code{ggplot2} and partly based on the \code{animation} package. It needs the \code{convert} tool of the \code{ImageMagick} software package to assemble GIF files. The command or directory to the convert tool needs to be provided with \code{conv_dir}. Please use \code{\link{get_imconvert}} to search for the convert command/tool directory on your system or to automatically download and install the required software. See \code{\link{get_imconvert}} for details.
 }
 \examples{
+
+\dontrun{
 #Load move and moveVis packages
 library(move)
 library(moveVis)
 
-#Get the sample data from the moveVis package
+#Get the sample data from the moveVis package (a data.frame)
 data("move_data")
 move_data$dt <- as.POSIXct(strptime(move_data$dt, "\%Y-\%m-\%d \%H:\%M:\%S", tz = "UTC"))
 
-#Differentiate data per individual
-indi_levels <- levels(move_data$individual)
-indi_levels_n <- length(indi_levels)
-for(i in 1:indi_levels_n){
-  if(i == 1){
-    indi_subset <- list(subset(move_data, individual == indi_levels[i]))
-  }else{
-    indi_subset <- c(indi_subset,list(subset(move_data,
-                               individual == indi_levels[i])))
-  }
-}
-indi_names <- paste(indi_levels, collapse = ", ")
+#Create moveStack object including multiple individuals from the data.frame
+#alternatively, use the move package to download data directly from movebank.org
+data_ani <- move(move_data$lon, move_data$lat, proj=CRS("+proj=longlat +ellps=WGS84"),
+                 time = move_data$dt, animal=move_data$individual, data=move_data)
 
-#Create move class object
-for(i in 1:length(indi_subset)){
-  if(i == 1){
-     data_ani <- list(move(x=indi_subset[[i]]$lon,y=indi_subset[[i]]$lat,
-                                 time=indi_subset[[i]]$dt,
-                                 proj=CRS("+proj=longlat +ellps=WGS84"),
-                                 animal=indi_levels[i]))
-  }else{
-     data_ani[i] <- list(move(x=indi_subset[[i]]$lon,y=indi_subset[[i]]$lat,
-                                 time=indi_subset[[i]]$dt,
-                                 proj=CRS("+proj=longlat +ellps=WGS84"),
-                                 animal=indi_levels[i]))}
-}
-
-#Find command or directory to convert tool of ImageMagick
+#Find the command or directory to convert tool of ImageMagick
 conv_dir <- get_imconvert()
 
-#Specify output directory
+#Specify the output directory, e.g.
 out_dir <- "/out/test"
+#or to a temporary directory:
+out_dir <- paste0(tempdir(),"/test")
+dir.create(out_dir)
 
 #Specify some optional appearance variables
 img_title <- "Movement of the white stork population at Lake Constance, Germany"
-img_sub <- paste0("including individuals ",indi_names)
+img_sub <- paste0("including individuals ",paste(rownames(idData(data_ani)), collapse=', '))
 img_caption <- "Projection: Geographical, WGS84; Sources: Movebank 2013; Google Maps"
 
-#Call animate_move()
+#Call animate_move() with an automatic basemap from Google, maximum frames at 50
+animate_move(data_ani, out_dir, conv_dir, tail_elements = 10,
+             paths_mode = "true_data", frames_nmax = 50,
+             img_caption = img_caption, img_title = img_title,
+             img_sub = img_sub, log_level = 1, extent_factor = 0.0002)
+ 
+#Improve your animation by adding a static points layer
+static_data <- data.frame(x = c(8.94,8.943), y = c(47.75,47.753), names = c("Site 1","Site 2"))
+
+#Call animate_move() with "static_data" added
+animate_move(data_ani, out_dir, conv_dir, tail_elements = 10,
+             paths_mode = "true_data", frames_nmax = 50,
+             img_caption = img_caption, img_title = img_title,
+             img_sub = img_sub, log_level = 1, extent_factor = 0.0002, 
+             static_data=static_data)
+             
+#Try a different paths_mode: Instead of "true_data" use "simple"
 animate_move(data_ani, out_dir, conv_dir, tail_elements = 10,
              paths_mode = "simple", frames_nmax = 50,
              img_caption = img_caption, img_title = img_title,
-             img_sub = img_sub, log_level = 1)
+             img_sub = img_sub, log_level = 1, extent_factor = 0.0002,
+             static_data=static_data)
+ 
+#Use your own basemap by adding lists of rasters and of timestamps
+data("basemap_data")
+layer = basemap_data[[1]] #this is a example MODIS NDVI dataset
+layer_dt = basemap_data[[2]] #this is a corresponding date/time list
+ 
+#Call animate_move with NDVI data as basemap
+#layer_type is "gradient", since NDVI values are continuous
+animate_move(data_ani, out_dir, conv_dir, tail_elements = 10, layer_type = "gradient",
+             paths_mode = "true_data", frames_nmax = 50, layer =layer, layer_dt = layer_dt,
+             img_caption = img_caption, img_title = img_title,
+             img_sub = img_sub, log_level = 1, extent_factor = 0.0002)
+             
+#How do your moving individuals interact with their environments?
+#Use "stats_create" to create statistics plots
+animate_move(data_ani, out_dir, conv_dir, tail_elements = 10, layer_type = "gradient",
+             paths_mode = "true_data", frames_nmax = 50, layer =layer, layer_dt = layer_dt,
+             img_caption = img_caption, img_title = img_title,
+             img_sub = img_sub, log_level = 1, extent_factor = 0.0002,
+             stats_create = TRUE)
+
+#If you just want those stats plots, use animate_stats()
+
+#Use "frames_layout" to change the layout of your GIF
+#e.g. change the position of st_all and st_per
+frames_layout <-  rbind(c("map","map","map","st_all","st_leg"),
+                        c("map","map","map","st_per","st_leg"))
+
+#or equalize the sizes of spatial map and stats plots
+frames_layout <-  rbind(c("map","st_all","st_per","st_leg"))
+
+animate_move(data_ani, out_dir, conv_dir, tail_elements = 10, layer_type = "gradient",
+             paths_mode = "true_data", frames_nmax = 50, layer =layer, layer_dt = layer_dt,
+             img_caption = img_caption, img_title = img_title,
+             img_sub = img_sub, log_level = 1, extent_factor = 0.0002,
+             stats_create = TRUE, frames_layout=frames_layout)
+}
 
 }
 \seealso{
