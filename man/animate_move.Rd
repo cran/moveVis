@@ -14,7 +14,8 @@ animate_move(m, out_dir, conv_dir = "", paths_mode = "true_data",
   tail_size = 4, img_title = "title", img_sub = "subtitle",
   img_caption = "caption", img_labs = "labs", legend_title = "",
   legend_limits = NA, legend_labels = "auto", map_elements = TRUE,
-  time_scale = TRUE, time_bar_col = "grey", scalebar_col = "white",
+  time_bar_col = "grey", time_scale = TRUE, time_pos_x = 0.5,
+  time_pos_y = 0.05, time_size = 3, scalebar_col = "white",
   scalebar_dist = "auto", north_col = "white", frames_layout = 0,
   frames_nmax = 0, frames_fps = 25, frames_nres = 1, frames_tres = 0,
   frames_width = NA, frames_height = NA, frames_pixres = 80,
@@ -27,7 +28,7 @@ animate_move(m, out_dir, conv_dir = "", paths_mode = "true_data",
 
 \item{out_dir}{character. Output directory of the output file.}
 
-\item{conv_dir}{character. Command of or directory to required image/video converter library. Depends on, what is specified for \code{out_format}. If \code{out_format = "gif"}, animate_move() works with the ImageMagick \code{convert} tool. In this case, specify command of or path to the \code{convert} tool. You can use \code{\link{get_libraries}} to find or download/install \code{convert}. If \code{out_format} is a video format (e.g. "mp4", "mov" ...), animate_move() works with either the FFmpeg \code{ffmepg} tool or the libav \code{avconv} tool. In this case, specify command of or path to the \code{ffmpeg} or \code{avconv} tool. See also \code{\link{get_libraries}}. If not specified, animate_move() trys to find libraries automatically.}
+\item{conv_dir}{character. Command of or path to required image/video converter tool. Depends on, what is specified for \code{out_format}. If \code{out_format = "gif"}, animate_move() works with the ImageMagick \code{convert} tool. In this case, specify command of or path to the \code{convert} tool. You can use \code{\link{get_libraries}} to find or download/install \code{convert}. If \code{out_format} is a video format (e.g. "mp4", "mov" ...), animate_move() works with either the FFmpeg \code{ffmepg} tool or the libav \code{avconv} tool. In this case, specify command of or path to the \code{ffmpeg} or \code{avconv} tool. See also \code{\link{get_libraries}}. If not specified, animate_move() trys to find libraries automatically.}
 
 \item{paths_mode}{character vector. Mode to be used for dealing with time information when displaying multiple individual paths. If set to "true_data", paths are displayed based on true coverage times, showing only time periods that are covered. Time gaps will be skipped. Each frame is linked to a specific true time. If set to "true_time",  paths are displayed based on true coverage times. Time gaps will be filled with non-movement frames. This mode is only recommended, if the dataset has no time gaps. Each frame is linked to a specific, true time. If set to "simple", all movement paths are displayed individually with no regard to the true coverage times. Time gaps will be skipped. Each frame displays several times at once, since each individual path has its own time. Default is "true_data".}
 
@@ -83,9 +84,15 @@ animate_move(m, out_dir, conv_dir = "", paths_mode = "true_data",
 
 \item{map_elements}{logical. If \code{FALSE}, map elements (north arrow and scale bar) are hidden. Default is \code{TRUE}.}
 
+\item{time_bar_col}{character. Colour of the time progress bar on the top edge of the map. Default is "grey".}
+
 \item{time_scale}{logical. If \code{FALSE}, time scale is hidden. Default is \code{TRUE}.}
 
-\item{time_bar_col}{character. Colour of the time progress bar on the top edge of the map. Default is "grey".}
+\item{time_pos_x}{numeric between 0 and 1, defines the relative position of the time scale display in the x direction. Default is 0.5 (centered).}
+
+\item{time_pos_y}{numeric between 0 and 1, defines the relative position of the time scale display in the y direction. Default is 0.06 (top).}
+
+\item{time_size}{numeric. Defines the font size of the time scale display. Default is 3.}
 
 \item{scalebar_col}{character. Colour of the scalebar text. Default is "white".}
 
@@ -109,7 +116,7 @@ animate_move(m, out_dir, conv_dir = "", paths_mode = "true_data",
 
 \item{frames_pixres}{numeric. Resolution of output file in pixel in ppi. The higher the ppi, the higher frames_height and frames_width should be to avoid large fonts and overlaps. Default is 80.}
 
-\item{out_name}{character. Name of the output file. Default is "moveVis_ani".}
+\item{out_name}{character. Name of the output file. Default is "moveVis".}
 
 \item{out_format}{character. Output format, e.g. "gif", "avi", "3gp", "mov", "mpeg", "mp4". Use \code{\link{get_formats}} to get all supported file formats on your system. "gif" is recommended for short animations only (recommended max. frame number around 200 frames; GIF frames are unlimited, but compution time will be very long). Use a video format for long animations. Format "gif" requires ImageMagick, all other video formats require FFmpeg ('ffmpeg') or libav ('avconv') to be installed. For that, also see \code{\link{get_libraries}}.}
 
@@ -156,10 +163,7 @@ m <- move(move_data$lon, move_data$lat, proj=CRS("+proj=longlat +ellps=WGS84"),
 conv_dir <- get_libraries()
 
 #Specify the output directory, e.g.
-out_dir <- "/out/test"
-#or to a temporary directory:
-out_dir <- paste0(tempdir(),"/test")
-dir.create(out_dir)
+out_dir <- paste0(getwd(),"/test")
 
 #Specify some optional appearance variables
 img_title <- "Movement of the white stork population at Lake Constance, Germany"

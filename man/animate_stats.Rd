@@ -19,7 +19,7 @@ animate_stats(m, out_dir, conv_dir = "convert", layer = "basemap",
 
 \item{out_dir}{character. Output directory of the output file.}
 
-\item{conv_dir}{character. Command of or directory to required image/video converter library. Depends on, what is specified for \code{out_format}. If \code{out_format = "gif"}, animate_move() works with the ImageMagick \code{convert} tool. In this case, specify command of or path to the \code{convert} tool. You can use \code{\link{get_libraries}} to find or download/install \code{convert}. If \code{out_format} is a video format (e.g. "mp4", "mov" ...), animate_move() works with either the FFmpeg \code{ffmepg} tool or the libav \code{avconv} tool. In this case, specify command of or path to the \code{ffmpeg} or \code{avconv} tool. See also \code{\link{get_libraries}}. If not specified, animate_move() trys to find libraries automatically.}
+\item{conv_dir}{character. Command of or path to required image/video converter tool. Depends on, what is specified for \code{out_format}. If \code{out_format = "gif"}, animate_move() works with the ImageMagick \code{convert} tool. In this case, specify command of or path to the \code{convert} tool. You can use \code{\link{get_libraries}} to find or download/install \code{convert}. If \code{out_format} is a video format (e.g. "mp4", "mov" ...), animate_move() works with either the FFmpeg \code{ffmepg} tool or the libav \code{avconv} tool. In this case, specify command of or path to the \code{ffmpeg} or \code{avconv} tool. See also \code{\link{get_libraries}}. If not specified, animate_move() trys to find libraries automatically.}
 
 \item{layer}{raster, list or character "basemap". Single raster object or list of raster objects to be used as (dynamically changing) basemap layer. Default is \code{"basemap"} to download a static basemap layer. Use a rasterBrick class object and set layer_type to "\code{RGB}" to compute a RGB basemap.}
 
@@ -61,7 +61,7 @@ animate_stats(m, out_dir, conv_dir = "convert", layer = "basemap",
 
 \item{frames_pixres}{numeric. Resolution of output file in pixel in ppi. The higher the ppi, the higher frames_height and frames_width should be to avoid large fonts and overlaps. Default is 80.}
 
-\item{out_name}{character. Name of the output file. Default is "moveVis_ani".}
+\item{out_name}{character. Name of the output file. Default is "moveVis".}
 
 \item{out_format}{character. Output format, e.g. "gif", "avi", "3gp", "mov", "mpeg", "mp4". Use \code{\link{get_formats}} to get all supported file formats on your system. "gif" is recommended for short animations only (recommended max. frame number around 200 frames; GIF frames are unlimited, but compution time will be very long). Use a video format for long animations. Format "gif" requires ImageMagick, all other video formats require FFmpeg ('ffmpeg') or libav ('avconv') to be installed. For that, also see \code{\link{get_libraries}}.}
 

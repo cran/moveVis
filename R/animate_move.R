@@ -4,7 +4,7 @@
 #'
 #' @param m list or \code{moveStack} class object. Needs to contain one or several \code{move} class objects (one for each individual path to be displayed) containing point coordinates, timestamps, projection and individual ID.
 #' @param out_dir character. Output directory of the output file.
-#' @param conv_dir character. Command of or directory to required image/video converter library. Depends on, what is specified for \code{out_format}. If \code{out_format = "gif"}, animate_move() works with the ImageMagick \code{convert} tool. In this case, specify command of or path to the \code{convert} tool. You can use \code{\link{get_libraries}} to find or download/install \code{convert}. If \code{out_format} is a video format (e.g. "mp4", "mov" ...), animate_move() works with either the FFmpeg \code{ffmepg} tool or the libav \code{avconv} tool. In this case, specify command of or path to the \code{ffmpeg} or \code{avconv} tool. See also \code{\link{get_libraries}}. If not specified, animate_move() trys to find libraries automatically.
+#' @param conv_dir character. Command of or path to required image/video converter tool. Depends on, what is specified for \code{out_format}. If \code{out_format = "gif"}, animate_move() works with the ImageMagick \code{convert} tool. In this case, specify command of or path to the \code{convert} tool. You can use \code{\link{get_libraries}} to find or download/install \code{convert}. If \code{out_format} is a video format (e.g. "mp4", "mov" ...), animate_move() works with either the FFmpeg \code{ffmepg} tool or the libav \code{avconv} tool. In this case, specify command of or path to the \code{ffmpeg} or \code{avconv} tool. See also \code{\link{get_libraries}}. If not specified, animate_move() trys to find libraries automatically.
 #' @param layer raster, list or character "basemap". Single raster object or list of raster objects to be used as (dynamically changing) basemap layer. Default is \code{"basemap"} to download a static basemap layer. Use a rasterBrick class object and set layer_type to "\code{RGB}" to compute a RGB basemap.
 #' @param layer_dt POSIXct vector or list. Single POSIXct date/time stamp or list of POSIXct date/time stamps representing the acquisition dates of the \code{layer} raster objects.
 #' @param layer_int logical. Whether to interpolate the basemap layer objects over time, if several are provided (\code{TRUE}), or to display them one after another depending on the animation time frame that is displayed (\code{FALSE}). Default is \code{FALSE}.
@@ -29,6 +29,9 @@
 #' @param map_elements logical. If \code{FALSE}, map elements (north arrow and scale bar) are hidden. Default is \code{TRUE}.
 #' @param time_scale logical. If \code{FALSE}, time scale is hidden. Default is \code{TRUE}.
 #' @param time_bar_col character. Colour of the time progress bar on the top edge of the map. Default is "grey".
+#' @param time_pos_x numeric between 0 and 1, defines the relative position of the time scale display in the x direction. Default is 0.5 (centered).
+#' @param time_pos_y numeric between 0 and 1, defines the relative position of the time scale display in the y direction. Default is 0.06 (top).
+#' @param time_size numeric. Defines the font size of the time scale display. Default is 3.
 #' @param extent_factor numeric. Defines the distance between the spatial extents of the movement data set and the basemap as proportion of the axis distance. Default is 0.0001. The higher the value, the larger the basemap extent. Ignored, if \code{layer} = "basemap".
 #' @param north_col character. Colour of the north arrow. Default is "white".
 #' @param paths_col character vector. Colours of the individual animation paths. If set to "auto", a predfined colour set will be used. If single colour, all paths will be displayed by the same colour. If more individuals then colours, the colours are repeated.
@@ -44,7 +47,7 @@
 #' @param frames_width numeric. Number of pixels of frame width. Default is 600 (with stats plots 1000).
 #' @param frames_height numeric. Number of pixels of frame height. Defualt is 600.
 #' @param frames_pixres numeric. Resolution of output file in pixel in ppi. The higher the ppi, the higher frames_height and frames_width should be to avoid large fonts and overlaps. Default is 80.
-#' @param out_name character. Name of the output file. Default is "moveVis_ani".
+#' @param out_name character. Name of the output file. Default is "moveVis".
 #' @param out_format character. Output format, e.g. "gif", "avi", "3gp", "mov", "mpeg", "mp4". Use \code{\link{get_formats}} to get all supported file formats on your system. "gif" is recommended for short animations only (recommended max. frame number around 200 frames; GIF frames are unlimited, but compution time will be very long). Use a video format for long animations. Format "gif" requires ImageMagick, all other video formats require FFmpeg ('ffmpeg') or libav ('avconv') to be installed. For that, also see \code{\link{get_libraries}}.
 #' @param overwrite logical. If TRUE, files with equal file names to \code{out_name} will be overwritten. Default is FALSE.
 #' @param log_level numeric. Level of console output given by the function. There are three log levels. If set to 3, no messages will be displayed except erros that caused an abortion of the process. If set to 2, warnings and errors will be displayed. If set to 1, a log showing the process activity, wanrnings ans errors will be displayed.
@@ -80,10 +83,7 @@
 #' conv_dir <- get_libraries()
 #' 
 #' #Specify the output directory, e.g.
-#' out_dir <- "/out/test"
-#' #or to a temporary directory:
-#' out_dir <- paste0(tempdir(),"/test")
-#' dir.create(out_dir)
+#' out_dir <- paste0(getwd(),"/test")
 #' 
 #' #Specify some optional appearance variables
 #' img_title <- "Movement of the white stork population at Lake Constance, Germany"
@@ -189,7 +189,7 @@ animate_move <- function(m, out_dir, conv_dir = "",
                          extent_factor = 0.0001, tail_elements = 10, tail_size = 4,
                          img_title = 'title', img_sub = 'subtitle', img_caption = "caption", img_labs = "labs",
                          legend_title = "", legend_limits = NA, legend_labels = "auto",
-                         map_elements = TRUE, time_scale = TRUE, time_bar_col = "grey", scalebar_col = "white", scalebar_dist = "auto", north_col = "white", 
+                         map_elements = TRUE, time_bar_col = "grey",  time_scale = TRUE, time_pos_x = 0.5, time_pos_y = 0.05, time_size = 3, scalebar_col = "white", scalebar_dist = "auto", north_col = "white", 
                          frames_layout = 0, frames_nmax =  0, frames_fps = 25, frames_nres = 1, frames_tres = 0, frames_width = NA, frames_height = NA, frames_pixres = 80,
                          out_name = "moveVis", out_format = "gif", overwrite = FALSE, log_level = 1, log_logical = FALSE, ..., conv_cmd = "", conv_frames = 100){
   
@@ -220,23 +220,16 @@ animate_move <- function(m, out_dir, conv_dir = "",
   #shiny arguments
   s_try <- try(arg$shiny_mode); if(class(s_try) != "NULL"){shiny_mode <- arg$shiny_mode}else{shiny_mode = FALSE} #prev or ani
   s_try <- try(arg$shiny_session); if(class(s_try)[1] != "NULL"){shiny_session <- arg$shiny_session}else{shiny_session = FALSE}
-  if(shiny_mode == FALSE){Progress <- NULL} #for CRAN checks
+  if(shiny_mode == FALSE){Progress <- NULL} #necessary for CRAN checks
   
   #parallel processing set-up
   s_try <- try(arg$par); if(class(s_try) != "NULL"){par <- arg$par}else{par <- FALSE}
   s_try <- try(arg$par_cores); if(class(s_try)[1] != "NULL"){par_cores <- arg$par_cores}else{par_cores = NA}
   
-
-  ## FUNCTION DEFINITION
+  options(moveVis.msg = shiny_mode)
   
-  #Define output handling
-  out <- function(input,type = 1, ll = log_level, msg = shiny_mode){
-    signs <- c("", "")
-    if(type == 2 & ll <= 2){warning(paste0(signs[2],input), call. = FALSE, immediate. = TRUE)}
-    else{if(type == 3){stop(input,call. = FALSE)}else{if(ll == 1){
-      if(msg == FALSE){cat(paste0(signs[1],input),sep="\n")
-      }else{message(paste0(signs[1],input))}}}}
-  }
+  
+  ## FUNCTION DEFINITION
   
   #get legend
   g_legend<-function(a.gplot){ 
@@ -274,12 +267,14 @@ animate_move <- function(m, out_dir, conv_dir = "",
   #+++++++++++++++++++++++++++++++++++++++ MAIN ++++++++++++++++++++++++++++++++++++++++++++++
   
   ## PREREQUISITES
+  if(log_level == 1 | log_level == 2 | log_level == 3) options(moveVis.log_level = log_level)
   out("Checking prerequisites...",type=1)
   
   #Plattform dependences
   if(.Platform$OS.type == 'windows'){cmd.fun <- shell}else{cmd.fun <- system}
 
   if(overwrite == FALSE & file.exists(paste0(out_dir,"/",out_name,".",out_format))){out("Output file already exists. Change 'out_name' or set 'overwrite' to TRUE.",type = 3)}
+  
   if(raster_only != TRUE){ #m not needed for animate_raster()
     if(missing(m)){
       out("Argument 'm' is missing. Please specify the input movement data.",type=3)
@@ -319,48 +314,46 @@ animate_move <- function(m, out_dir, conv_dir = "",
       if(!dir.exists(out_dir)){out(paste0("'out_dir' '",out_dir,"' is not existing. Create or change 'out_dir'."),type = 3)}
       user_wd <- getwd()
       temp_dir <- paste0(tempdir(),"/moveVis")
-      quiet(dir.create(temp_dir))
+      if(!dir.exists(temp_dir)) dir.create(temp_dir)
       setwd(temp_dir)
     }
   }
+  
   if(is.character(out_format) == FALSE){out("Argument 'out_format' needs to be a character object.", type = 3)}
   if(shiny_mode == FALSE){
-    if(is.character(conv_dir) == FALSE){
+    if(!isTRUE(is.character(conv_dir))){
       out("Argument 'conv_dir' needs to be a character object.",type=3)
     }else{
-      if(out_format == "gif"){
-        if(length(conv_dir) > 1){
-          if(length(grep("convert",conv_dir)) != 0){
-            conv_dir <- conv_dir[grep("convert",conv_dir)]
-          }else{
-            out(paste0("Could not detect the 'convert' tool from 'conv_dir'. '",paste0(conv_dir, collapse = ", "), "' cannot be used for this output file format: '",out_format,"'"),type=2)
-          }
-        }
-        if(conv_dir == ""){conv_dir <- get_libraries(lib.tool = "convert", nodownload = TRUE, log_level = 3)}
-        tryit <- try(cmd.fun(conv_dir,ignore.stdout = TRUE,ignore.stderr = TRUE))
-        if(tryit != 1){out(paste0("'",conv_dir,"' could not be executed. Use get_libraries() to search for 'convert' on your system or to install the required library (ImageMagick)."),type=3)
-        }else{out(paste0("Detected 'conv_dir' executable on this system: '",conv_dir,"'"),type=1)}
-      }else{
-        if(length(conv_dir) > 1){
-          if(length(grep("ffmpeg",conv_dir)) != 0){
-            conv_dir <- conv_dir[grep("ffmpeg",conv_dir)]
-          }else{
-            if(length(grep("avconc",conv_dir)) != 0){
-              conv_dir <- conv_dir[grep("avconv",conv_dir)]
-            }else{
-              out(paste0("Could not detect the 'ffmpeg' or 'avconv' tool from 'conv_dir'. '",paste0(conv_dir, collapse = ", "), "' cannot be used for this output file format: '",out_format,"'"),type=2)
-            }
-          }
-        }
-        if(conv_dir == ""){conv_dir <- get_libraries(lib.tool = c("ffmpeg","avconv"), nodownload = TRUE, log_level = 3)[1]}
-        tryit <- try(cmd.fun(conv_dir,ignore.stdout = TRUE,ignore.stderr = TRUE))
-        if(tryit > 1){out(paste0("'", conv_dir, "' could not be executed. Use get_libraries() to search for 'ffmpeg'/'avconv' on your system or to install the required libraries (FFmpeg, libav)."),type=3)
-        }else{out(paste0("Detected 'conv_dir' executable on this system: '",conv_dir,"'"),type=1)}
-        
-        formats.search <- which(get_formats(conv_dir) == out_format)
-        if(length(formats.search) == 0){out(paste0("This system's '",conv_dir,"' installation seems to not support '",out_format,"'. Use another format."),type=3)}
+      if(length(unlist(sapply(conv_dir, function(x) grep(".exe", x), USE.NAMES = F))) > 0){
+        cd.exists <- sapply(conv_dir, file.exists, USE.NAMES = F)
+        if(!all(cd.exists)) out(paste0("File '", paste0(conv_dir[!cd.exists], collapse = ", "), " does not exist."), type = 3)
+      }
+      if(conv_dir[1] == ""){
+        conv_dir <- get_libraries()
+        if(length(conv_dir) == 0) out("Could not detect 'convert', 'ffmpeg' or 'avconv' on your system. Please use the argument 'conv_dir' to specify the command path to 'convert', 'ffmpeg' or 'avconv' manually.", type = 3)
+        out(paste0("Detected 'conv_dir' executable on this system: '", paste0(conv_dir, collapse = ", "), "'"), type=1)
       }
     }
+    if(out_format == "gif"){
+      if(length(conv_dir) > 1){
+        conv_dir <- grep("convert", conv_dir, value =T)
+        if(length(conv_dir) == 0) out(paste0("'", paste0(conv_dir, collapse = ", "), "' cannot be used for this output file format: '", out_format,"'"),type=3)
+      }
+    }else{
+      if(length(conv_dir) > 1){
+        if(length(grep("ffmpeg", conv_dir)) != 0){
+          conv_dir <- conv_dir[grep("ffmpeg", conv_dir)]
+        }else{
+          if(length(grep("avconc",conv_dir)) != 0){
+            conv_dir <- conv_dir[grep("avconv",conv_dir)]
+          }else{
+            out(paste0("'", paste0(conv_dir, collapse = ", "), "' cannot be used for this output file format: '",out_format,"'"),type=2)
+          }
+        }
+      }
+    }
+    formats.search <- which(get_formats(conv_dir) == out_format)
+    if(length(formats.search) == 0){out(paste0("out_format = '",out_format,"' with conv_dir = '", conv_dir, "' is not supported."),type=3)}
   }
   
   if(is.numeric(frames_nres) == FALSE){
@@ -462,7 +455,7 @@ animate_move <- function(m, out_dir, conv_dir = "",
       }
     }
   }else{
-    quiet(res <- matrix(c(1,2,3,2,3,4,5,6,7,8)[match(frames_layout, c("map","st_per","st_all","st_perR","st_allR","st_perG","st_allG","st_perB","st_allB","st_leg"))], 3))
+    res <- matrix(c(1,2,3,2,3,4,5,6,7,8)[match(frames_layout, c("map","st_per","st_all","st_perR","st_allR","st_perG","st_allG","st_perB","st_allB","st_leg"))], 3)
     res <- ifelse(is.na(res), frames_layout, res)
     frames_layout <- apply(res, 2, as.numeric)
     
@@ -1037,7 +1030,7 @@ animate_move <- function(m, out_dir, conv_dir = "",
     plt_scale_north <- '+ geom_polygon(data = ld[[8]], aes_(x = ~x, y = ~y), fill = "white", colour = "black") + geom_polygon(data = ld[[9]], aes_(x = ~x, y = ~y), fill = "black", colour = "black") + annotate("text", label = paste(leg_text, " km", sep=""), x = leg_coords$x, y = leg_coords$y, size = 3, colour = scalebar_col) + geom_line(arrow=arrow(length=unit(3.7,"mm")),data = arrow, aes_(x=~x, y=~y), colour=north_col,size=1.06) + annotate(x=x_arrow, y=y_down, label="N", colour=north_col, geom="text", size=6.5)'
   }else{plt_scale_north <- ''}
   if(time_scale == TRUE){ #leg_coords$x[2]  rec1_leftdown$y-leg_dist
-    plt_time_scale <- paste0('+ annotate("text", label = ld[[7]][[x]], x = ',as.character(x_bm[[1]]+(x_bm[[2]]-x_bm[[1]])/2),', y = ',as.character(y_bm[[2]]-(abs(leg_dist)*1.5)),', size = 3, colour = "',scalebar_col,'")')
+    plt_time_scale <- paste0('+ annotate("text", label = ld[[7]][[x]], x = ',as.character(x_bm[[1]]+(abs(x_bm[[2]]-x_bm[[1]])*time_pos_x)),', y = ',as.character(y_bm[[2]]-(abs(y_bm[[2]]-y_bm[[1]])*time_pos_y)),', size = ', as.character(time_size), ', colour = "',scalebar_col,'")')
   }else{plt_time_scale <- ''}
   plt_progress <- '+ geom_line(data = prog_bar, aes_(x=~x,y=~y),colour="grey",size=1.8)'
   
@@ -1061,7 +1054,7 @@ animate_move <- function(m, out_dir, conv_dir = "",
     plt.bm <- paste0('ggplot(data=ld[[10]][[x]], aes_(x=~x, y=~y)) + geom_tile(aes(fill = factor(value))) + scale_fill_manual(values = c(setNames(ld[[11]], 1:length(ld[[11]]))), labels = c(', paste0('"',legend_labels,'"',collapse = ", "),'), drop = FALSE, na.value = "', as.character(layer_nacol) ,'", guide = guide_legend(title = "',legend_title ,'", label = TRUE, label.vjust = 0.9, title.hjust = 0, title.vjust =0)) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) + theme(aspect.ratio=1)')
   }
   if(layer_type == "RGB"){
-    plt.bm <- paste0('ggRGB(ld[[10]][[x]],r=3,g=2,b=1,stretch="',layer_stretch,'") + scale_fill_identity() + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) + theme(aspect.ratio=1)')
+    plt.bm <- paste0('ggRGB(ld[[10]][[x]],r=1,g=2,b=3,stretch="',layer_stretch,'") + scale_fill_identity() + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) + theme(aspect.ratio=1)')
   }
   
   #stats plot function
@@ -1091,7 +1084,7 @@ animate_move <- function(m, out_dir, conv_dir = "",
   }
   
   #Extract stats legend
-  if(stats_create == TRUE){k <- 1; b <- 1; x <- 1; stleg <- quiet(g_legend(eval(plt_stats_parse)))}
+  if(stats_create == TRUE){k <- 1; b <- 1; x <- 1; stleg <- g_legend(eval(plt_stats_parse))}
   
   #Compute plot identifiers
   frames_layout_id <- matrix(seq((min(frames_layout,na.rm = TRUE)-min(frames_layout,na.rm = TRUE)+1),max(frames_layout,na.rm = TRUE))[1:length(sort(unique(c(frames_layout))))][match(frames_layout, sort(unique(c(frames_layout))))], length(frames_layout[,1]))
@@ -1118,8 +1111,7 @@ animate_move <- function(m, out_dir, conv_dir = "",
   if(log_level == 1 & shiny_mode == FALSE){p.out <- timerProgressBar(min = 0, max = n_loop-1+n_reloop, width = (getOption("width")-25), style = 3, char = "=")} #txtProgressBar #pboptions(type = "timer", char = "=", txt.width = (getOption("width")-25))}
   if(shiny_mode == "ani"){
     progress <- Progress$new(shiny_session, min=1, max=n_loop-1+n_reloop)
-    progress$set(message = 'Animating data\n',
-                 detail = 'This may take a while...')
+    progress$set(message = 'Animating data\n', detail = 'This may take a while...')
   }
   
   #Draw plots per frame
@@ -1142,7 +1134,7 @@ animate_move <- function(m, out_dir, conv_dir = "",
   
   p.dir <- quiet(sapply(seq(1:(length(global.times)-tail_elements)), function(x, ld = in.data.list, lp = in.plt.list, lc = in.cond.list, dir = temp_dir){ #length(global.times)
     if(log_level == 1 & shiny_mode == FALSE){setTimerProgressBar(p.out, x)}
-    if(shiny_mode == "ani"){Progress$set(value = x)}
+    if(shiny_mode == "ani"){progress$set(value = x)}
 
     prog_bar <- data.frame(prog_x_st[1],prog_y); prog_bar <- rbind(prog_bar,c(prog_x_end[x],prog_y))
     colnames(prog_bar) <- c("x","y")
@@ -1199,35 +1191,36 @@ animate_move <- function(m, out_dir, conv_dir = "",
   if(out_format == "gif"){
     og.dir <- sapply(seq(1:n_reloop), function(x, il = index_list, d = p.dir, cd = conv_dir, cm = conv_cmd, fi = frames_fps, n = n_loop){
       if(log_level == 1 & shiny_mode == FALSE){setTimerProgressBar(p.out, (n+x))}
-      if(shiny_mode == "ani"){Progress$set(value = n+x)}
+      if(shiny_mode == "ani"){progress$set(value = n+x)}
       if(x == 1){range = c(0,il[x])}else{range = c(il[x-1], il[x])}
       
       batch <- paste0('"',cd,'" ', cm,' -loop 0 -delay ',toString(100%/%fi),' ',paste0(d[range[1]:range[2]],collapse = " "),' out',toString(x),'.', out_format)
       
-      if(.Platform$OS.type == 'windows'){write(batch,"batch.bat"); quiet(cmd.fun("batch.bat >nul 2>1"))
-      }else{write(batch,"batch.bat"); system("chmod +x batch.bat"); quiet(cmd.fun("./batch.bat"))}
+      if(.Platform$OS.type == 'windows'){write(batch,"batch.bat"); cmd.fun("batch.bat >nul 2>1")
+      }else{write(batch,"batch.bat"); system("chmod +x batch.bat"); cmd.fun("./batch.bat")}
       file.remove("batch.bat")
       return(paste0('out',toString(x),'.',out_format))
     })
     
     if(n_reloop > 1){
       batch <- paste0('"',conv_dir,'" ', conv_cmd,' -loop 0 -delay ',toString(100%/%frames_fps),' ',paste0(og.dir,collapse = " "),' ',out_name,'.', out_format)
-      if(.Platform$OS.type == 'windows'){write(batch,"batch.bat"); quiet(cmd.fun("batch.bat >nul 2>1"))
-      }else{write(batch,"batch.bat"); system("chmod +x batch.bat"); quiet(cmd.fun("./batch.bat"))}
+      if(.Platform$OS.type == 'windows'){write(batch,"batch.bat"); cmd.fun("batch.bat >nul 2>1")
+      }else{write(batch,"batch.bat"); system("chmod +x batch.bat"); cmd.fun("./batch.bat")}
       file.remove("batch.bat")
     }else{
       file.rename(paste0("out1.",out_format),paste0(out_name,".",out_format))
     }
   }else{
-    quiet(cmd.fun(paste0(conv_dir, ' -i ',conv_cmd,' p%d.png -vcodec libx264 -pix_fmt yuv420p -r ',toString(frames_fps),' ',out_name,'.',out_format),ignore.stdout = TRUE,ignore.stderr = TRUE))
+    cmd.fun(paste0(conv_dir, ' -i ',conv_cmd,' p%d.png -vcodec libx264 -pix_fmt yuv420p -r ',toString(frames_fps),' ',out_name,'.',out_format),ignore.stdout = TRUE,ignore.stderr = TRUE)
   }
   
-  #Cleaning up
-  file.copy(paste0(out_name,".",out_format),paste0(out_dir,"/",out_name,".",out_format), overwrite = TRUE)
+  #Checking result
+  if(!file.exists(paste0(temp_dir, "/", out_name,".",out_format))) out("Output file could not be found.", type = 3)
+  file.rename(paste0(temp_dir, "/", out_name,".",out_format), paste0(out_dir,"/",out_name,".",out_format)) #, overwrite = TRUE)
   file.remove(list.files(temp_dir))
     
   if(log_level == 1 & shiny_mode == FALSE){closepb(p.out)}
-  if(shiny_mode == "ani"){Progress$close()}
+  if(shiny_mode == "ani"){progress$close()}
   
   setwd(user_wd) #reset to user wd
   
@@ -1235,10 +1228,6 @@ animate_move <- function(m, out_dir, conv_dir = "",
   run.dur <- as.character(round(difftime(run.stop,run.start,units = "mins"),digits = 2))
   out(paste0("Total run time: ",run.dur," minutes"))
   
-  if(file.exists(paste0(out_dir,'/',out_name,'.',out_format))){
-    if(shiny_mode == FALSE){out(paste0("Done. '",out_name,".",out_format,"' has been saved to '",out_dir,"'."), type=1)}else{out("Done.")}
-    if(log_logical == TRUE){return(TRUE)}
-  }else{
-    out("animate_move failed due to unknown error.",type=3)
-  }
+  if(shiny_mode == FALSE){out(paste0("Done. '",out_name,".",out_format,"' has been saved to '",out_dir,"'."), type=1)}else{out("Done.")}
+  if(log_logical == TRUE){return(TRUE)}
 }
