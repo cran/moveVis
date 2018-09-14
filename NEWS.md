@@ -1,5 +1,42 @@
+## moveVis 1.0.0
+Future implementations (not yet implemented!)
+
+<br>
+**Next version:**
+* "keep tracks" setting to force paths to not disappear
+* segmentation coulouring
+* optional user-defined font sizes of all fonts (axis, annotations etc.), colours based on ggplot2 syntax
+* optional user-defined map elements position vectors
+
+<br>
+**Maybe next version:**
+* user-defined area of interest (AOI), which scales map extent to specific area without excluding tracks "out of sight", enables move-in and move-out of individuals to AOI
+* follow population mode
+* follow individual mode
+* day-/night-time visualization
+* dynamic overplotting, e. g. polygons or points that change over time
+
+<br>
+**Some day:**
+* 3D animations, e.g. for including altitude data
+
+<br>
+
+***
+
+## moveVis 0.9.8
+Updating unit tests for CRAN checks
+
+<br>
+**Bug fixes:**
+* Bug causing unit tests to fail on machines with different external tools available
+* added SystemRequirements field in DESCRIPTION
+<br>
+
+***
+
 ## moveVis 0.9.7
-Windows library detection bugs fixed
+Windows library detection bugs fixed (dev. version)
 
 <br>
 **New features:**
@@ -17,7 +54,7 @@ Windows library detection bugs fixed
 ***
 
 ## moveVis 0.9.6
-video support, automatic time harmonization
+video support, automatic time harmonization, bug fixes (CRAN version)
 
 <br>
 **New functions:**
