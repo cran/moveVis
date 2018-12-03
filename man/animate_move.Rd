@@ -9,7 +9,8 @@ animate_move(m, out_dir, conv_dir = "", paths_mode = "true_data",
   indi_names = NA, layer = "basemap", layer_dt = "basemap",
   layer_int = FALSE, layer_type = "", layer_stretch = "none",
   layer_col = c("sandybrown", "white", "darkgreen"), layer_nacol = "white",
-  map_type = "satellite", stats_create = FALSE, static_data = NA,
+  map_type = "satellite", api_key = NULL, map_zoom = 0,
+  map_crop = FALSE, stats_create = FALSE, static_data = NA,
   static_gg = NA, extent_factor = 1e-04, tail_elements = 10,
   tail_size = 4, img_title = "title", img_sub = "subtitle",
   img_caption = "caption", img_labs = "labs", legend_title = "",
@@ -54,7 +55,13 @@ animate_move(m, out_dir, conv_dir = "", paths_mode = "true_data",
 
 \item{layer_nacol}{character. Colour to be displayed for NA values. Default is "white".}
 
-\item{map_type}{character.  Static basemap type. Chosse from "roadmap", "satellite", "hybrid", "terrain".}
+\item{map_type}{character. Static basemap type. Either Bing Maps options "satellite" (default), "hybrid" or OpenStreetMaps options "roadmap", "roadmap_dark", "roadmap_bw", "roadmap_watercolor".}
+
+\item{api_key}{character. For \code{basemap="satellite"} and \code{basemap="hybrid"}, the Microsoft Bing Maps service is used. If you use this option often, please get your own (free) API key by registering at the \href{https://msdn.microsoft.com/en-us/library/ff428642.aspx}{Microsoft website}.}
+
+\item{map_zoom}{numeric. Increase or decrease the degree of detail of a static basemap. -1 or smaller integers decrease zoom, +1 or greate integers increase zoom. Default is 0. Ignored, if custom basemap is used.}
+
+\item{map_crop}{logical. Set to \code{TRUE} to rop the static basemap to the extent of \code{m}. Otherwise, use the static basemap with the best resolution for the given extent. Default is \code{FALSE}.}
 
 \item{stats_create}{logical. \code{TRUE} to create statistic plots side by side with the spatial plot. Use the arguments explained for \code{\link{animate_stats}} to adjust the plotting behaviour. Default is \code{FALSE}.}
 
@@ -168,9 +175,9 @@ out_dir <- paste0(getwd(),"/test")
 #Specify some optional appearance variables
 img_title <- "Movement of the white stork population at Lake Constance, Germany"
 img_sub <- paste0("including individuals ",paste(rownames(idData(m)), collapse=', '))
-img_caption <- "Projection: Geographical, WGS84; Sources: Movebank 2013; Google Maps"
+img_caption <- "Projection: Geographical, WGS84; Sources: Movebank 2013; Bing Maps"
 
-#Call animate_move() with an automatic basemap from Google, maximum frames at 50
+#Call animate_move() with an automatic basemap from Bing, maximum frames at 50
 #output format "gif"
 animate_move(m, out_dir, conv_dir, tail_elements = 10,
              paths_mode = "true_data", frames_nmax = 50,
