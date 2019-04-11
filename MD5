@@ -1,6 +1,6 @@
-b6b692b56498bb7561cc6c593ddac17b *DESCRIPTION
+db599ff6f831936b42285143f2ab3aab *DESCRIPTION
 a1e943945f8878b1cdfb4239d006d520 *NAMESPACE
-bbc97d03ac5fe33f6392784dacddd152 *NEWS.md
+f241b8399c9570d9b18276ede198abcd *NEWS.md
 d76022e7556bcbdc4e52a70534266e2d *R/add_colourscale.R
 e03b37477b782b4feb33bf6a1eb5dd11 *R/add_gg.R
 fd5820d6d571257c511c2fe8ccc20053 *R/add_labels.R
@@ -18,13 +18,13 @@ cca7a86621944a1b96b719be33926721 *R/deprecated.R
 e1fb28ad85ae5111ebaa3b62a99da8c5 *R/frames_spatial.R
 7d6f3d8416f161c3c62eff2b2bff6a11 *R/get_maptypes.R
 150a8a15f7c65b19b6b89c69fb8e06b7 *R/join_frames.R
-d89251bdafe79b61735b41edb15254bf *R/moveVis-internal.R
+d46981b13ddddb0d81492967bb577573 *R/moveVis-internal.R
 08a16045b796fd7921f39442a1ced321 *R/move_data.R
 905dd3945606c04f827ece9bfbdb6292 *R/pkgname.R
 81e29d352c52f4631e3ad5ee36fb1475 *R/subset_move.R
 e8c08535ed5d58b352ac8fbf36d55c35 *R/suggest_formats.R
 db5868bf796f5b1e3841f3fef5da88c8 *R/view_spatial.R
-b55999e8d1fef4ae0a9a5067afcbb70d *README.md
+3274c295ecdeafa13854a5c4012685a1 *README.md
 64e7e121c2548a52611a245e01ebb7a8 *data/basemap_data.rda
 80ef54dd96eb5a1332ab7e6561e178db *data/datalist
 09d70402b0da7f3937ef6d510447c7a9 *data/move_data.rda
