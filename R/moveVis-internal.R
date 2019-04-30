@@ -23,6 +23,18 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
     } else{message(paste0(sign,input))}}}}
 }
 
+#' Outputs animation stats
+#'
+#' @param n.frames numeric
+#' @param fps numeric
+#' 
+#' @importFrom lubridate dseconds
+#' @keywords internal
+#' @noRd
+.stats <- function(n.frames, fps = 25){
+  out(paste0("Approximated animation duration: \u2248 ", as.character(dseconds(n.frames/fps)), " at ", toString(fps), " fps for ", toString(n.frames), " frames"))
+}
+
 #' verbose lapply
 #'
 #' @importFrom pbapply pblapply
@@ -164,7 +176,7 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 #' 
 #' @importFrom grDevices colorRampPalette
 #' @noRd 
-.split <- function(m.df, tail_length = 0, path_size = 1, tail_size = 1){
+.split <- function(m.df, tail_length = 0, path_size = 1, tail_size = 1, tail_colour = "white", trace_show = F, trace_colour = "grey", path_fade = F){
   
   # m.names <- unique(as.character(m.df$name))
   # dummy <- lapply(m.names, function(mn){
@@ -175,7 +187,10 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
   # })
   # names(dummy) <- m.names
   
-  .lapply(1:(max(m.df$frame, na.rm = T)), function(i){ # , mn = m.names, d = dummy){
+  #n.out <- max(m.df$frame, na.rm = T)
+  #if(isTRUE(path_fade)) n.out <- n.out + tail_length
+  
+  .lapply(1:max(m.df$frame, na.rm = T), function(i){ # , mn = m.names, d = dummy){
     
     i.range <- seq(i-tail_length, i)
     i.range <- i.range[i.range > 0]
@@ -187,19 +202,55 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
     # compute colour ramp from id count
     #y.colours <- sapply(unique(y$id), function(x) rev(unique(y[y$id == x,]$colour)), simplify = F)
     y.colours <- sapply(unique(y$id), function(x) y[y$id == x,]$colour, simplify = F)
-    y$tail_colour <- unlist(mapply(y.cols = y.colours, y.size = table(y$id), function(y.cols, y.size){
+    y.count <- as.vector(table(y$id))
+    diff.max <- max(m.df$frame, na.rm = T)-max(i.range)
+    
+    y$tail_colour <- unlist(mapply(y.cols = y.colours, y.size = y.count, function(y.cols, y.size){
+      
+      if(all(isTRUE(path_fade), diff.max < tail_length, y.size > diff.max)){
+        n <- diff.max+1
+        v <- rep(tail_colour, (y.size-(n)))
+        y.cols <- tail(y.cols, n = n)
+      } else{
+        n <- y.size
+        v <- NULL
+      }
+      
       y.ramps <- lapply(unique(y.cols), function(x){
-        f <- colorRampPalette(c(x, "white"))
-        rev(f(y.size+4)[1:y.size])
+        f <- colorRampPalette(c(x, tail_colour))
+        rev(f(n+4)[1:n])
       })
       
-      mapply(i = 1:y.size, i.ramp = as.numeric(mapvalues(y.cols, unique(y.cols), 1:length(unique(y.cols)))), function(i, i.ramp){
+      c(v, mapply(i = 1:n, i.ramp = as.numeric(mapvalues(y.cols, unique(y.cols), 1:length(unique(y.cols)))), function(i, i.ramp){
         y.ramps[[i.ramp]][i]
-      }, USE.NAMES = F)
+      }, USE.NAMES = F))
+
     }, SIMPLIFY = F))
-    
+ 
     # compute tail size from id count
-    y$tail_size <- unlist(lapply(table(y$id), function(x) seq(tail_size, path_size, length.out = x)))
+    y$tail_size <- unlist(lapply(y.count, function(y.size){
+      
+      if(all(isTRUE(path_fade), diff.max < tail_length, y.size > diff.max)){
+        n <- diff.max+1
+        v <- rep(tail_size, (y.size-(n)))
+      } else{
+        n <- y.size
+        v <- NULL
+      }
+      c(v, seq(tail_size, path_size, length.out = n))
+    }))
+    
+    if(all(isTRUE(trace_show) & i > tail_size)){
+      
+      y.trace <- m.df[!is.na(match(m.df$frame,1:(min(i.range)-1))),]
+      y.trace$colour <- y.trace$tail_colour <-  trace_colour
+      y.trace$tail_size <- tail_size
+      
+      # join trace, reorder by frame and group by id
+      y <- rbind(y, y.trace)
+      y <- y[order(y$frame),]
+      y <- y[order(y$id),]
+    }
     #y$colour <- factor(as.character(y$colour), level = unique(as.character(m.df$colour)))
     #y$name <- factor(as.character(y$name), level = unique(as.character(m.df$name)))
     
@@ -219,7 +270,7 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 #' spatial plot function
 #' @importFrom ggplot2 geom_path aes_string theme scale_fill_identity scale_y_continuous scale_x_continuous scale_colour_manual theme_bw guides guide_legend coord_sf
 #' @noRd 
-.gg_spatial <- function(m.split, gg.bmap, m.df, m.crs, path_size = 3, path_end = "round", path_join = "round", equidistant = T, 
+.gg_spatial <- function(m.split, gg.bmap, m.df, m.crs, path_size = 3, path_end = "round", path_join = "round", path_alpha = 1, equidistant = T, 
                         path_mitre = 10, path_arrow = NULL, print_plot = T, path_legend = T, path_legend_title = "Names"){
   
   # frame plotting function
@@ -227,13 +278,13 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
     
     ## base plot
     p <- y + geom_path(data = x, aes_string(x = "x", y = "y", group = "id"), size = x$tail_size, lineend = path_end, linejoin = path_join,
-                       linemitre = path_mitre, arrow = path_arrow, colour = x$tail_colour) +  theme_bw() +
+                       linemitre = path_mitre, arrow = path_arrow, colour = x$tail_colour, alpha = path_alpha) +  theme_bw() +
       scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) + coord_sf(crs = m.crs, datum = m.crs)
     
     ## add legend?
     if(isTRUE(path_legend)){
       l.df <- cbind.data.frame(x = x[1,]$x, y = x[1,]$y, name = levels(m.df$name),
-                                  colour = as.character(m.df$colour[sapply(as.character(unique(m.df$name)), function(x) match(x, m.df$name)[1] )]), stringsAsFactors = F)
+                               colour = as.character(m.df$colour[sapply(as.character(unique(m.df$name)), function(x) match(x, m.df$name)[1] )]), stringsAsFactors = F)
       l.df$name <- factor(l.df$name, levels = l.df$name)
       l.df <- rbind(l.df, l.df)
       
@@ -427,7 +478,7 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 
 
 #' assign raster to frames
-#' @importFrom raster nlayers unstack crop extent stack approxNA calc raster setValues
+#' @importFrom raster nlayers unstack crop extent stack calc raster setValues
 #' @importFrom RStoolbox ggRGB ggR
 #' 
 #' @noRd
@@ -501,8 +552,8 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
                                             toner = "https://stamen-tiles-a.a.ssl.fastly.net/toner/",
                                             toner_bg = "https://stamen-tiles-a.a.ssl.fastly.net/toner-background/",
                                             toner_lite = "https://stamen-tiles-a.a.ssl.fastly.net/toner-lite/",
-                                            terrain = "http://a.tile.stamen.com/terrain/",
-                                            terrain_bg = "https://stamen-tiles-a.a.ssl.fastly.net/terrain-background/",
+                                            terrain = "http://tile.stamen.com/terrain/",
+                                            terrain_bg = "http://tile.stamen.com/terrain-background",
                                             mtb = "http://tile.mtbmap.cz/mtbmap_tiles/"),
                                  carto = list(light = "https://a.basemaps.cartocdn.com/light_all/",
                                               light_no_labels = "https://a.basemaps.cartocdn.com/light_nolabels/",

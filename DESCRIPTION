@@ -1,9 +1,9 @@
 Package: moveVis
 Type: Package
 Title: Movement Data Visualization
-Version: 0.10.1
+Version: 0.10.2
 Depends: R (>= 3.5.0)
-Date: 2019-04-11
+Date: 2019-04-30
 Authors@R: person("Jakob", "Schwalb-Willmann", email = "movevis@schwalb-willmann.de",
   role = c("aut", "cre"))
 Description: Tools to visualize movement data (e.g. from GPS tracking) and temporal changes of environmental data (e.g. from remote sensing) by creating video animations.
@@ -11,15 +11,15 @@ License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 6.1.1
 Imports: raster, sp, sf, move, RStoolbox, geosphere, slippymath,
-        lubridate, rlang, ggplot2, cowplot, gifski, magick, av,
-        pbapply, curl, plyr, dplyr, zoo, methods, grDevices
+        lubridate, ggplot2, cowplot, gifski, magick, av, pbapply, curl,
+        plyr, dplyr, zoo, magrittr, methods, grDevices
 BugReports: http://www.github.com/16eagle/moveVis/issues
 SystemRequirements: ImageMagick, FFmpeg, libav
 URL: http://movevis.org
 Suggests: mapview, leaflet, testthat
 NeedsCompilation: no
-Packaged: 2019-04-11 10:06:09 UTC; jas24nx
+Packaged: 2019-04-30 18:32:15 UTC; jas24ny
 Author: Jakob Schwalb-Willmann [aut, cre]
 Maintainer: Jakob Schwalb-Willmann <movevis@schwalb-willmann.de>
 Repository: CRAN
-Date/Publication: 2019-04-11 10:42:47 UTC
+Date/Publication: 2019-04-30 20:20:04 UTC
