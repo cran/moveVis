@@ -112,16 +112,16 @@
 #' get_maptypes()
 #' 
 #' # use mapbox to get a satellite or other map types (register to on mapbox.com to get a token)
-#' frames <- frames_spatial(m, map_service = "mapbox",
-#'                          map_token = "your_token_from_your_mapbox_account",
-#'                          map_type = "satellite")
+#' # frames <- frames_spatial(m, map_service = "mapbox",
+#' #                          map_token = "your_token_from_your_mapbox_account",
+#' #                          map_type = "satellite")
 #' 
 #' # if you make a lot of calls to frames_spatial during mutliple sessions, use a map directory
 #' # to save all base maps offline so that you do not have to query the servers each time
-#' frames <- frames_spatial(m, map_service = "mapbox",
-#'                          map_token = "your_token_from_your_mapbox_account",
-#'                          map_type = "satellite",
-#'                          map_dir = "your/map_directory/")                         
+#' # frames <- frames_spatial(m, map_service = "mapbox",
+#' #                          map_token = "your_token_from_your_mapbox_account",
+#' #                          map_type = "satellite",
+#' #                          map_dir = "your/map_directory/")                         
 #' 
 #' # use your own custom base maps
 #' data("basemap_data")
@@ -142,9 +142,7 @@
 #' frames <- frames_spatial(m, r_list = r_list, r_times = r_times, r_type = "discrete",
 #'                          fade_raster = FALSE)
 #' 
-#' # animate the frames created with frames_spatial;
-#' animate_frames(frames, out_file = tempfile(fileext = ".gif"))
-#' 
+#' # then simply animate the frames using animate_frames
 #' # see ?add_colourscale to learn how to change colours of custom base maps
 #' # see all add_ functions on how to customize your frames created with frames_spatial
 #' # or frames_graph
@@ -190,7 +188,10 @@ frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient"
   char.args <- c(path_end = path_end, path_join = path_join, path_legend_title = path_legend_title)
   catch <- sapply(1:length(char.args), function(i) if(!is.character(char.args[[i]])) out(paste0("Argument '", names(char.args)[[i]], "' must be of type 'numeric'."), type = 3))
   
-  if(!is.null(ext)) if(!inherits(ext, "Extent")) out("Argument 'ext' must be of type 'Extent' (see raster::extent), if defined.", type = 3)
+  if(!is.null(ext)){
+    if(!inherits(ext, "Extent")) out("Argument 'ext' must be of type 'Extent' (see raster::extent), if defined.", type = 3)
+    if(isTRUE(ext < extent(m))) out("The frame extent defined using argument 'ext' is smaller than extent(m). Be aware that movements outside of 'ext' will be clipped.", type = 2)
+  }
   if(!is.null(path_arrow)) if(!inherits(path_arrow, "arrow")) out("Argument 'path_arrow' must be of type 'arrrow' (see grid::arrow), if defined.", type = 3)
   if(is.character(path_colours)) if(length(path_colours) != n.indiv(m)) out("Argument 'path_colours' must be of same length as the number of individual tracks of 'm', if defined. Alternatively, use a column 'colour' for individual colouring per coordinate within 'm' (see details of ?frames_spatial).", type = 3)
   if(!is.logical(path_legend)) out("Argument 'path_legend' must be of type 'logical'.", type = 3)
@@ -220,11 +221,19 @@ frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient"
   if(length(r_list) == 1){
     if(r_type == "gradient") gg.bmap <- .lapply(r_list[[1]], ggR, ggObj = T, geom_raster = T, coord_equal = F, ...)
     if(r_type == "discrete") gg.bmap <- .lapply(r_list[[1]], ggR, ggObj = T, geom_raster = T, forceCat = T, coord_equal = F, ...)
-  } else{ gg.bmap <- .lapply(1:length(r_list[[1]]), function(i) ggRGB(stack(lapply(r_list, "[[", i)),  r = 1, g = 2, b = 3, ggObj = T, geom_raster = T, coord_equal = F, ...))}
+  } else{
+    gg.bmap <- .lapply(1:length(r_list[[1]]), function(i) ggRGB(stack(lapply(r_list, "[[", i)),  r = 1, g = 2, b = 3, ggObj = T, geom_raster = T, coord_equal = F, ...))
+  }
+  
+  ## scale plot to extent and set na.rm to TRUE to avoid warnings
+  gg.bmap <- lapply(gg.bmap, function(x){
+    x$layers[[1]]$geom_params$na.rm <- T
+    return(x)
+  })
   
   ## create frames
   out("Creating frames...")
-  frames <- .gg_spatial(m.split = m.split, gg.bmap = gg.bmap, m.df = m.df, m.crs = proj4string(m), equidistant = equidistant,
+  frames <- .gg_spatial(m.split = m.split, gg.bmap = gg.bmap, m.df = m.df, m.crs = proj4string(m), gg.ext = gg.ext, equidistant = equidistant,
                         path_size = path_size, path_end = path_end, path_join = path_join, path_alpha = path_alpha, path_mitre = path_mitre,
                         path_arrow = path_arrow, print_plot = F, path_legend = path_legend, path_legend_title = path_legend_title)
   

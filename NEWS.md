@@ -1,3 +1,23 @@
+***
+
+## moveVis 0.10.3
+Bug fixes. Current CRAN version.
+
+**New features:**
+
+* Argument `ext` of `frames_spatial()` now clips all tracks to `ext` if `ext` is smaller than the extent of `m`.
+* Argument `units` of `add_scalebar()` to switch between `km` and `miles`
+
+**Bug fixes:**
+
+* Bug that caused the scale bar distance calculated by `add_scalebar()` to be `0` for smaller-scale extents. Distance rounding is now iterated by digit to solve this.
+* Bug in `frames_spatial()` that resulted in wrong plot extents when an extent smaller than the extent of m was provided using argument 'ext'. In such a case, movement tracks are now clipped to small extents and move outside of the visible frame instead of altering the frame extent.
+* Bug that causes traces to cover paths if `trace_show = TRUE`. Traces are now always displayed behind paths.
+
+<br>
+
+***
+
 ## moveVis 0.10.2
 Adding some small but practical features. Released on CRAN: 2019-04-30.
 
