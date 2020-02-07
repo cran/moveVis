@@ -70,6 +70,8 @@ animate_frames <- function(frames, out_file, fps = 25, width = 700, height = 700
   if(!all(sapply(frames, function(x) inherits(x, "ggplot")))) out("At least one element of argument 'frames' is not a ggplot object.", type = 3)
   
   if(!is.character(out_file)) out("Argument 'out_file' must be of type 'character'.", type = 3)
+  of_split <- strsplit(out_file, "/")[[1]]
+  if(length(of_split) > 1) if(isFALSE(dir.exists(paste0(head(of_split, n = -1), collapse = "/")))) out("Target directory of 'out_file' does not exist.", type = 3)
   if(all(file.exists(out_file), !isTRUE(overwrite))) out("Defined output file already exists and overwriting is disabled.", type = 3)
   num.args <- c(fps = fps, width = width, height = height, res = res)
   catch <- sapply(1:length(num.args), function(i) if(!is.numeric(num.args[[i]])) out(paste0("Argument '", names(num.args)[[i]], "' must be of type 'numeric'."), type = 3))
@@ -87,9 +89,9 @@ animate_frames <- function(frames, out_file, fps = 25, width = 700, height = 700
   
   if(out_ext == "gif"){
     if(length(frames) > 800) out("The number of frames exceeds 800 and the GIF format is used. This format may not be suitable for animations with a high number of frames, since it causes large file sizes. Consider using a video file format instead.", type = 2)
-    save_gif(.lapply(frames, function(x) quiet(print(x))), gif_file = out_file, width = width, height = height, delay = (1/fps), progress = verbose, res = res, ...)
+    save_gif(.lapply(frames, function(x) quiet(print(x)), moveVis.n_cores = 1), gif_file = out_file, width = width, height = height, delay = (1/fps), progress = verbose, res = res, ...)
   }else{
-    av_capture_graphics(.lapply(frames, function(x) quiet(print(x))), output = out_file, width = width, height = height, res = res, framerate = fps, verbose = verbose, ...) #, vfilter =' framerate=fps=10') 
+    av_capture_graphics(.lapply(frames, function(x) quiet(print(x)), moveVis.n_cores = 1), output = out_file, width = width, height = height, res = res, framerate = fps, verbose = verbose, ...) #, vfilter =' framerate=fps=10') 
   }
   if(isTRUE(display)) utils::browseURL(out_file)
 }

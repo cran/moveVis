@@ -1,10 +1,13 @@
 ## env vars
-map_token = Sys.getenv("moveVis.map_token")
+map_token = Sys.getenv("moveVis_map_token")
 if(map_token != "") run_mapbox <- TRUE else run_mapbox <- FALSE
-test_maps = as.logical(Sys.getenv("moveVis.test_maps"))
+test_maps = as.logical(Sys.getenv("moveVis_test_maps"))
+
+n_cores <- as.numeric(Sys.getenv("moveVis_n_cores"))
+if(!is.na(n_cores)) if(n_cores > 1) use_multicore(n_cores)
 
 ## which tests to run
-# which_tests = Sys.getenv("moveVis.which_tests")
+# which_tests = Sys.getenv("moveVis_which_tests")
 # if(which_tests != ""){
 #   which_tests <- strsplit(which_tests, ";")[[1]]
 # } else{
@@ -12,8 +15,13 @@ test_maps = as.logical(Sys.getenv("moveVis.test_maps"))
 # }
 
 ## directories
-test_dir = Sys.getenv("moveVis.test_dir")
-if(test_dir != ""){ if(!dir.exists(test_dir)) dir.create(test_dir)} else{ test_dir <- tempdir()}
+test_dir <- Sys.getenv("moveVis_test_dir")
+if(test_dir != ""){
+  if(!dir.exists(test_dir)) dir.create(test_dir)
+}else{
+  test_dir <- tempdir()
+}
+cat("Test directory: ", test_dir, "\n")
 
 data("move_data", package = "moveVis", envir = environment())
 data("basemap_data", package = "moveVis", envir = environment())

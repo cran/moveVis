@@ -4,9 +4,16 @@
 \alias{add_colourscale}
 \title{Add scale to frames}
 \usage{
-add_colourscale(frames, type, colours, labels = waiver(),
-  na.colour = "grey50", na.show = TRUE, legend_title = NULL,
-  verbose = TRUE)
+add_colourscale(
+  frames,
+  type,
+  colours,
+  labels = waiver(),
+  na.colour = "grey50",
+  na.show = TRUE,
+  legend_title = NULL,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{frames}{list of \code{ggplot2} objects, crated with \code{\link{frames_spatial}}.}
@@ -23,7 +30,7 @@ add_colourscale(frames, type, colours, labels = waiver(),
 
 \item{legend_title}{character, a legend title.}
 
-\item{verbose}{logical, if \code{TRUE}, messages on the function's progress are displayed (default).}
+\item{verbose}{logical, if \code{TRUE}, messages and progress information are displayed on the console (default).}
 }
 \value{
 List of frames.

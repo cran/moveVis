@@ -73,7 +73,7 @@
 #' @seealso \code{\link{frames_spatial}} \code{\link{join_frames}} \code{\link{animate_frames}}
 #' @export
 
-frames_graph <- function(m, r_list, r_times, r_type = "gradient", fade_raster = FALSE, return_data = FALSE, graph_type = "flow", path_size = 1, path_legend = TRUE, path_legend_title = "Names", 
+frames_graph <- function(m, r_list, r_times, r_type = "gradient", fade_raster = FALSE, crop_raster = TRUE, return_data = FALSE, graph_type = "flow", path_size = 1, path_legend = TRUE, path_legend_title = "Names", 
                          val_min = NULL, val_max = NULL, val_by = 0.1, verbose = T){
 
   ## check input arguments
@@ -118,58 +118,54 @@ frames_graph <- function(m, r_list, r_times, r_type = "gradient", fade_raster = 
   out("Processing movement data...")
   m.df <- .m2df(m) 
   .stats(max(m.df$frame))
-  m.split <- .split(m.df)
   
   ## create raster list
-  r_list <- .rFrames(r_list, r_times, m.split, .ext(m.df, st_crs(proj4string(m))), fade_raster = fade_raster)
-  
-  m.split <- mapply(x = r_list[[1]], y = m.split, function(x, y){
-    y$value <- extract(x, y[c("x", "y")])
-    return(y)
-  }, SIMPLIFY = F)
-  
-  ## fuse framewise split to data.frame
-  gg.df <- do.call(rbind, m.split)
+  r_list <- .rFrames(r_list, r_times, m.df, .ext(m.df, st_crs(proj4string(m))), fade_raster = fade_raster, crop_raster = crop_raster)
+  if(length(r_list) == 1){
+    m.df$value <- sapply(1:nrow(m.df), function(i) extract(r_list[[1]], m.df[i, c("x", "y")]), USE.NAMES = F)
+  } else{
+    m.df$value <- sapply(1:nrow(m.df), function(i) extract(r_list[[m.df[i,]$frame]], m.df[i, c("x", "y")]), USE.NAMES = F) 
+  }
   
   ## create value sequence
-  if(is.null(val_min)) val_min <- floor(min(sapply(r_list[[1]], minValue), na.rm = T))
-  if(is.null(val_max)) val_max <- ceiling(max(sapply(r_list[[1]], maxValue), na.rm = T))
+  if(is.null(val_min)) val_min <- floor(min(sapply(r_list, minValue), na.rm = T))
+  if(is.null(val_max)) val_max <- ceiling(max(sapply(r_list, maxValue), na.rm = T))
   val_digits <- nchar(strsplit(as.character(val_by), "[.]")[[1]][2])
   if(is.na(val_digits)) val_digits <- 0
   val_seq <- seq(val_min, val_max, by = val_by)
   
   if(isTRUE(return_data)){
-    return(gg.df)
+    return(m.df)
   } else{
     
     ## create frames
     out("Creating frames...")
     if(graph_type == "flow"){
-      frames <- .gg_flow(m.split, gg.df, path_legend, path_legend_title, path_size, val_seq)
+      frames <- .gg_flow(m.df, path_legend, path_legend_title, path_size, val_seq)
     }
     if(graph_type == "hist"){
       
-      dummy <- do.call(rbind, lapply(unique(gg.df$id), function(id){
-        dummy <- cbind.data.frame(count = 0, value = val_seq, id = id, name = unique(gg.df[gg.df$id == id,]$name),
-                                  colour = unique(gg.df[gg.df$id == id,]$colour))
+      dummy <- do.call(rbind, lapply(unique(m.df$id), function(id){
+        cbind.data.frame(count = 0, value = val_seq, id = id, name = unique(m.df[m.df$id == id,]$name),
+                         colour = unique(m.df[m.df$id == id,]$colour))
       }))
       
       ## Calculating time-cumulative value histogram per individual and timestep
       #out("Calculating histogram...")
-      l.hist <- lapply(1:max(gg.df$frame), function(i, d = dummy){
-        x <- gg.df[unlist(lapply(1:i, function(x) which(gg.df$frame == x))),]
+      l.hist <- lapply(1:max(m.df$frame), function(i, d = dummy){
+        x <- m.df[unlist(lapply(1:i, function(x) which(m.df$frame == x))),]
         
-        do.call(rbind, lapply(unique(x$id), function(id){
+        x <- do.call(rbind, lapply(unique(x$id), function(id){
           y <- x[x$id == id,]
           z <- table(round(y$value, digits = val_digits))
           
           d.id <- d[d$id == id,]
           d.id[match(names(z), as.character(d.id$value)), 1] <- z
-          d[d$id == id,] <- d.id
           
           #d <- cbind(d, id = unique(y$id), name = unique(y$name), colour = unique(y$colour))
-          return(d)
+          return(d.id)
         }))
+
       })
       
       ## fusing histograms for plot scaling

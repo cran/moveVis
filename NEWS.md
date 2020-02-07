@@ -1,7 +1,33 @@
 ***
 
+## moveVis 0.10.4
+Publication, added parallelization, new memory settings and bug fixes. Latest CRAN version.
+
+**Peer-reviewed publication:**
+* An <a href="https://doi.org/10.1111/2041-210X.13374">open-access paper</a> accompanying the `moveVis` R package has been peer-reviewed by and published in *'Methods in Ecology and Evolution'* (see https://doi.org/10.1111/2041-210X.13374).
+* Reference: *Schwalb-Willmann, J.; Remelgado, R.; Safi, K.; Wegmann, M. (2020). moveVis: Animating movement trajectories in synchronicity with static or temporally dynamic environmental data in R. Methods in Ecology and Evolution. Accepted Author Manuscript. https://doi.org/10.1111/2041-210X.13374*.
+* Citation: Please use `citation("moveVis")` to cite moveVis, e.g. when you use it in publications or presentations.
+
+**New features:**
+
+* Many computationally expensive `moveVis` tasks can now be parallelized, as multi-core support for `moveVis` has been implemented (see `use_multicore()`)
+* Added a new example data set `whitestork_data`, representing coordinates and acquisition times of 15 White Storks migrating from Lake of Constance, Germany, to Africa.
+
+**New functions:**
+
+* `use_multicore()` lets you turn on multi-core support of `moveVis` to increase computational time through parallelization.
+* `use_disk()` enables the usage of disk space for creating frames. This can prevent memory overload when creating frames for very large animations.
+
+**Bug fixes:**
+
+* Bug that caused a gap between traces and paths.
+
+<br>
+
+***
+
 ## moveVis 0.10.3
-Bug fixes. Current CRAN version.
+Bug fixes. Released on CRAN: 2019-10-06.
 
 **New features:**
 

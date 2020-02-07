@@ -4,9 +4,16 @@
 \alias{add_labels}
 \title{Add labels to frames}
 \usage{
-add_labels(frames, title = waiver(), subtitle = waiver(),
-  caption = waiver(), tag = waiver(), x = waiver(), y = waiver(),
-  verbose = TRUE)
+add_labels(
+  frames,
+  title = waiver(),
+  subtitle = waiver(),
+  caption = waiver(),
+  tag = waiver(),
+  x = waiver(),
+  y = waiver(),
+  verbose = TRUE
+)
 }
 \arguments{
 \item{frames}{list of \code{ggplot2} objects, crated with \code{\link{frames_spatial}}.}
@@ -23,7 +30,7 @@ add_labels(frames, title = waiver(), subtitle = waiver(),
 
 \item{y}{character, label of the y axis. If \code{NULL}, an existing title of \code{frames} is removed. If \code{waiver()} (default, see \code{ggplot2::waiver()}), an existing title of \code{frames} is kept.}
 
-\item{verbose}{logical, if \code{TRUE}, messages on the function's progress are displayed (default).}
+\item{verbose}{logical, if \code{TRUE}, messages and progress information are displayed on the console (default).}
 }
 \value{
 List of frames.

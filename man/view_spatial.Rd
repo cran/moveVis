@@ -4,9 +4,16 @@
 \alias{view_spatial}
 \title{View movements on an interactive map}
 \usage{
-view_spatial(m, render_as = "mapview", time_labels = TRUE,
-  stroke = TRUE, path_colours = NA, path_legend = TRUE,
-  path_legend_title = "Names", verbose = TRUE)
+view_spatial(
+  m,
+  render_as = "mapview",
+  time_labels = TRUE,
+  stroke = TRUE,
+  path_colours = NA,
+  path_legend = TRUE,
+  path_legend_title = "Names",
+  verbose = TRUE
+)
 }
 \arguments{
 \item{m}{\code{move} or \code{moveStack}. May contain a column named \code{colour} to control path colours (see \code{details}).}
@@ -23,7 +30,7 @@ view_spatial(m, render_as = "mapview", time_labels = TRUE,
 
 \item{path_legend_title}{character, path legend title. Default is \code{"Names"}.}
 
-\item{verbose}{logical, if \code{TRUE}, messages on the function's progress are displayed (default).}
+\item{verbose}{logical, if \code{TRUE}, messages and progress information are displayed on the console (default).}
 }
 \value{
 An interatcive \code{mapview} or \code{leaflet} map.

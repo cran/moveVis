@@ -2,7 +2,9 @@
 
 [![CRAN version](https://www.r-pkg.org/badges/version/moveVis)](https://CRAN.R-project.org/package=moveVis)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/last-month/moveVis?color=brightgreen)](https://CRAN.R-project.org/package=moveVis)
+[![CRAN checks](https://cranchecks.info/badges/summary/moveVis)](https://cran.r-project.org/web/checks/check_results_moveVis.html)
 [![Build Status](https://travis-ci.org/16EAGLE/moveVis.svg?branch=master)](https://travis-ci.org/16EAGLE/moveVis) 
+[![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/16EAGLE/moveVis?branch=master&svg=true)](https://ci.appveyor.com/project/16EAGLE/moveVis)
 [![Coverage](https://codecov.io/gh/16eagle/moveVis/branch/master/graph/badge.svg)](https://codecov.io/gh/16EAGLE/moveVis)
 
 ## Introduction
@@ -21,7 +23,7 @@
 
 With version 0.10.0, the package has been rewritten from the ground up with the goal to make it easier to customize the appearance of movement animations. Thus, the logic of the package, its functions and their syntax have changed. 
 
-<a href="http://movevis.org">`moveVis`</a> 0.10.3 (stable) can be installed from CRAN:
+The latest stable version of <a href="http://movevis.org">`moveVis`</a> can be installed from CRAN:
 
 ```r
 install.packages("moveVis")
@@ -78,6 +80,10 @@ install.packages("moveVis-0.9.9.tar.gz", repos = NULL)
 #### Viewing movement tracks
 * `view_spatial()` displays movement tracks on an interactive `mapview` or `leaflet` map.
 
+#### Processing settings
+* `use_multicore()` enables multi-core usage for computational expensive processing steps.
+* `use_disk()` enables the usage of disk space for creating frames, which can prevent memory overload when creating frames for very large animations.
+
 ## Get started
 
 The following example shows how to make a simple animation using a default base map by first aligning your movement data to a uniform time scale, creating a list of `ggplot2` frames and turning these frames into an animated `GIF`:
@@ -104,7 +110,7 @@ frames <- frames_spatial(m, path_colours = c("red", "green", "blue"),
 frames[[100]] # preview one of the frames, e.g. the 100th frame
 
 # animate frames
-animate_frames(frames, out_file = "/full/path/to/moveVis.gif")
+animate_frames(frames, out_file = "moveVis.gif")
 ```
 
 <p align="center"><img width="700" src="https://raw.githubusercontent.com/16EAGLE/AUX_data/master/data/moveVis_readme/examp5.gif"></p>
@@ -175,10 +181,16 @@ This initiative is part of the <a target="_blank" href="https://www.geographie.u
 
 <p align="justify">
 <div>
-    <a href="https://www.geographie.uni-wuerzburg.de/en/fernerkundung/startseite/"><img width="21.89781%" src="https://www.uni-wuerzburg.de/typo3conf/ext/uw_sitepackage/Resources/Public/Images/uni-wuerzburg-logo.svg"></a>
-    <a href="http://www.dlr.de/eoc/en/"><img width="16.78832%" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/DLR_Logo.svg/744px-DLR_Logo.svg.png"></a>
-     <a href="http://www.bmub.bund.de/"><img width="32.11679%" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRX92Q6lhYFo0Rv7p7Y3obqFXsxRyjXMNKSJ_q9bAvXYdFd5wOF3Q"></a>
-    <a href="http://www.orn.mpg.de/en/"><img width="28%" src="https://www.molgen.mpg.de/188611/mpi_Seew_LogoText-1355515314.gif"></a>
+    <a href="https://www.geographie.uni-wuerzburg.de/en/fernerkundung/startseite/"><img width="26%" src="https://www.uni-wuerzburg.de/typo3conf/ext/uw_sitepackage/Resources/Public/Images/uni-wuerzburg-logo.svg"></a>
+    <a href="http://www.dlr.de/eoc/en/"><img width="17%" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/DLR_Logo.svg/744px-DLR_Logo.svg.png"></a>
+     <a href="https://www.bmu.de/en/"><img width="30%" src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Logo_Bundesministerium_f%C3%BCr_Umwelt_Naturschutz_und_nukleare_Sicherheit.png"></a>
+    <a href="https://www.ab.mpg.de/"><img width="20%" src="https://upload.wikimedia.org/wikipedia/en/c/c9/Max-Planck-Gesellschaft.svg"></a>
 </div>
 </p>
+
+## Citation
+
+An <a href="https://doi.org/10.1111/2041-210X.13374">open-access paper</a> accompanying the `moveVis` R package has been peer-reviewed by and published in *'Methods in Ecology and Evolution'* (see https://doi.org/10.1111/2041-210X.13374). Please cite moveVis, e.g. when you use it in publications or presentations, using the output of `citation("moveVis")` or as follows:
+
+*Schwalb-Willmann, J.; Remelgado, R.; Safi, K.; Wegmann, M. (2020). moveVis: Animating movement trajectories in synchronicity with static or temporally dynamic environmental data in R. Methods in Ecology and Evolution. Accepted Author Manuscript. https://doi.org/10.1111/2041-210X.13374*
 

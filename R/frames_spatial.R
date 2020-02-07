@@ -7,6 +7,7 @@
 #' @param r_times list of \code{POSIXct} times. Each list element represents the time of the corresponding element in \code{r_list}. Must be of same length as \code{r_list}.
 #' @param r_type character, either \code{"gradient"} or \code{"discrete"}. Ignored, if \code{r_list} contains \code{rasterStacks} of three bands, which are treated as RGB.
 #' @param fade_raster logical, if \code{TRUE}, \code{r_list} is interpolated over time based on \code{r_times}. If \code{FALSE}, \code{r_list} elements are assigned to those frames closest to the equivalent times in \code{r_times}.
+#' @param crop_raster logical, whether to crop rasters in \code{r_list} to plot extent before plotting or not.
 #' @param path_size numeric, size of each path.
 #' @param path_end character, either \code{"round"}, \code{"butt"} or \code{"square"}, indicating the path end style.
 #' @param path_join character, either \code{"round"}, \code{"mitre"} or \code{"bevel"}, indicating the path join style.
@@ -40,7 +41,7 @@
 #'        \item \code{stretch}, character, either 'none', 'lin', 'hist', 'sqrt' or 'log' for no stretch, linear, histogram, square-root or logarithmic stretch.
 #'        \item \code{quantiles}, numeric vector with two elements, min and max quantiles to stretch to. Defaults to 2% stretch, i.e. \code{c(0.02,0.98)}.
 #'    }
-#' @param verbose logical, if \code{TRUE}, messages on the function's progress are displayed (default).
+#' @param verbose logical, if \code{TRUE}, messages and progress information are displayed on the console (default).
 #' 
 #' @details If argument \code{path_colours} is not defined (set to \code{NA}), path colours can be defined by adding a character column named \code{colour} to \code{m}, containing a colour code or name per row (e.g. \code{"red"}. This way, for example, column \code{colour} for all rows belonging to individual A can be set to \code{"green"}, while column \code{colour} for all rows belonging to individual B can be set to \code{"red"}.
 #' Colours could also be arranged to change through time or by behavioral segments, geographic locations, age, environmental or health parameters etc. If a column name \code{colour} in \code{m} is missing, colours will be selected automatically. Call \code{colours()} to see all available colours in R.
@@ -151,7 +152,7 @@
 #' @seealso \code{\link{frames_graph}} \code{\link{join_frames}} \code{\link{animate_frames}}
 #' @export
 
-frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient", fade_raster = FALSE, map_service = "osm", map_type = "streets", map_res = 1, map_token = NULL, map_dir = NULL,
+frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient", fade_raster = FALSE, crop_raster = TRUE, map_service = "osm", map_type = "streets", map_res = 1, map_token = NULL, map_dir = NULL,
                            margin_factor = 1.1, equidistant = NULL, ext = NULL, path_size = 3, path_end = "round", path_join = "round", path_mitre = 10, path_arrow = NULL, path_colours = NA, path_alpha = 1, path_fade = FALSE,
                            path_legend = TRUE, path_legend_title = "Names", tail_length = 19, tail_size = 1, tail_colour = "white", trace_show = FALSE, trace_colour = "white", ..., verbose = TRUE){
   
@@ -161,6 +162,7 @@ frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient"
   if(inherits(m, "Move")) m <- moveStack(m)
   
   ## check m time conformities
+  out("Checking temporal alignment...")
   .time_conform(m)
 
   if(!is.null(r_list)){
@@ -170,9 +172,10 @@ frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient"
     if(!inherits(r_times, "POSIXct")) out("Argument 'r_times' must be of type 'POSIXct' if 'r_list' is defined.", type = 3)
     if(!isTRUE(r_type %in% c("gradient", "discrete", "RGB"))) out("Argument 'r_type' must eihter be 'gradient', 'discrete' or 'RGB'.", type = 3)
     if(!is.logical(fade_raster)) out("Argument 'fade_raster' has to be either TRUE or FALSE.", type = 3)
+    if(!is.logical(crop_raster)) out("Argument 'crop_raster' has to be either TRUE or FALSE.", type = 3)
   } else{
-    if(!isTRUE(tolower(map_service) %in% names(get_maptypes()))) out(paste0("Argument 'map_service' must be ", paste0(names(moveVis::get_maptypes()), collapse = ", ")))
-    if(!isTRUE(tolower(map_type) %in% get_maptypes(map_service))) out("The defined map type is not supported for the selected service. Use get_maptypes() to get all available map types.", type = 3)
+    if(isFALSE(tolower(map_service) %in% names(get_maptypes()))) out(paste0("Argument 'map_service' must be ", paste0(names(moveVis::get_maptypes()), collapse = ", ")))
+    if(isFALSE(tolower(map_type) %in% get_maptypes(map_service))) out("The defined map type is not supported for the selected service. Use get_maptypes() to get all available map types.", type = 3)
     if(!is.numeric(map_res)) out("Argument 'map_res' must be 'numeric'.", type = 3)
     if(any(map_res < 0, map_res > 1)) out("Argument 'map_res' must be a value between 0 and 1.", type = 3)
     if(all(!inherits(map_token, "character"), map_service == "mapbox")) out("Argument 'map_token' must be defined to access a basemap, if 'r_list' is not defined and 'map_service' is 'mapbox'.", type = 3)
@@ -204,8 +207,9 @@ frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient"
   .stats(n.frames = max(m.df$frame))
   
   gg.ext <- .ext(m.df, m.crs = st_crs(proj4string(m)), ext, margin_factor, equidistant) # calcualte extent
-  m.split <- .split(m.df, tail_length = tail_length, path_size = path_size, tail_size = tail_size, tail_colour = tail_colour,
-                    trace_show = trace_show, trace_colour = trace_colour, path_fade = path_fade) # split m by size of tail
+  
+  m.df$coord_sf <- list(ggplot2::coord_sf(xlim = c(gg.ext$xmin, gg.ext$xmax), ylim = c(gg.ext$ymin, gg.ext$ymax),
+                                          expand = F, crs = proj4string(m), datum = proj4string(m), clip = "on"))
   
   ## calculate tiles and get map imagery
   if(is.null(r_list)){
@@ -215,27 +219,15 @@ frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient"
   }
   
   out("Assigning raster maps to frames...")
-  r_list <- .rFrames(r_list, r_times, m.split, gg.ext, fade_raster)
-  
-  ## plot basemap
-  if(length(r_list) == 1){
-    if(r_type == "gradient") gg.bmap <- .lapply(r_list[[1]], ggR, ggObj = T, geom_raster = T, coord_equal = F, ...)
-    if(r_type == "discrete") gg.bmap <- .lapply(r_list[[1]], ggR, ggObj = T, geom_raster = T, forceCat = T, coord_equal = F, ...)
-  } else{
-    gg.bmap <- .lapply(1:length(r_list[[1]]), function(i) ggRGB(stack(lapply(r_list, "[[", i)),  r = 1, g = 2, b = 3, ggObj = T, geom_raster = T, coord_equal = F, ...))
-  }
-  
-  ## scale plot to extent and set na.rm to TRUE to avoid warnings
-  gg.bmap <- lapply(gg.bmap, function(x){
-    x$layers[[1]]$geom_params$na.rm <- T
-    return(x)
-  })
+  r_list <- .rFrames(r_list, r_times, m.df, gg.ext, fade_raster, crop_raster = crop_raster)
   
   ## create frames
   out("Creating frames...")
-  frames <- .gg_spatial(m.split = m.split, gg.bmap = gg.bmap, m.df = m.df, m.crs = proj4string(m), gg.ext = gg.ext, equidistant = equidistant,
+  frames <- .gg_spatial(r_list = r_list, r_type = r_type, m.df = m.df, equidistant = equidistant,
                         path_size = path_size, path_end = path_end, path_join = path_join, path_alpha = path_alpha, path_mitre = path_mitre,
-                        path_arrow = path_arrow, print_plot = F, path_legend = path_legend, path_legend_title = path_legend_title)
+                        path_arrow = path_arrow, print_plot = F, path_legend = path_legend, path_legend_title = path_legend_title,
+                        tail_length = tail_length, tail_size = tail_size, tail_colour = tail_colour, trace_show = trace_show,
+                        trace_colour = trace_colour, path_fade = path_fade, ...)
   
   ## add time attribute per frame
   frames <- mapply(x = frames, y = unique(m.df$time), function(x, y){
