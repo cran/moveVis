@@ -1,6 +1,6 @@
-05cf2985d5c043acab1066653c05a19b *DESCRIPTION
+9763e4e519ffcb47f8f35157fc79b2ed *DESCRIPTION
 54f98ad21fa6d3e8910f9ccf2c88f99b *NAMESPACE
-1ca8501229b67774878e98bd1b152aef *NEWS.md
+f87b8814796019f6326cb796061eb599 *NEWS.md
 cb34dd289557ab6c528f4ff86a67332b *R/add_colourscale.R
 e03b37477b782b4feb33bf6a1eb5dd11 *R/add_gg.R
 fd5820d6d571257c511c2fe8ccc20053 *R/add_labels.R
@@ -19,14 +19,14 @@ cca7a86621944a1b96b719be33926721 *R/deprecated.R
 a18655d96f1f3045b20c2a1c04af4f39 *R/get_frametimes.R
 7d6f3d8416f161c3c62eff2b2bff6a11 *R/get_maptypes.R
 150a8a15f7c65b19b6b89c69fb8e06b7 *R/join_frames.R
-e4d16df7aa384ed0c2796363365b4461 *R/moveVis-internal.R
+d185e1e2e93993cf0c16cb96777b15e4 *R/moveVis-internal.R
 f696d77420e861f6a8ad4b457077f6ed *R/pipe.R
 438a36b29562eae48c0e2c3bdf770adf *R/pkgname.R
 1c96491f3282e7cb6fc51cab74aae622 *R/settings.R
 4c0d07053d02c9a1c0da9536d101024b *R/subset_move.R
 e8c08535ed5d58b352ac8fbf36d55c35 *R/suggest_formats.R
 db5868bf796f5b1e3841f3fef5da88c8 *R/view_spatial.R
-31fdd206593452f9824722faba3d07f1 *README.md
+f2918197d4bf68e11881eec0ae19d83d *README.md
 64e7e121c2548a52611a245e01ebb7a8 *data/basemap_data.rda
 efe64052156279b3c0053f0b8a08d54f *data/datalist
 09d70402b0da7f3937ef6d510447c7a9 *data/move_data.rda
