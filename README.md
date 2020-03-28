@@ -6,10 +6,13 @@
 [![Build Status](https://travis-ci.org/16EAGLE/moveVis.svg?branch=master)](https://travis-ci.org/16EAGLE/moveVis) 
 [![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/16EAGLE/moveVis?branch=master&svg=true)](https://ci.appveyor.com/project/16EAGLE/moveVis)
 [![Coverage](https://codecov.io/gh/16eagle/moveVis/branch/master/graph/badge.svg)](https://codecov.io/gh/16EAGLE/moveVis)
+[![Package dependencies](https://tinyverse.netlify.com/badge/moveVis)](https://CRAN.R-project.org/package=moveVis)
 
 ## Introduction
 
-<a href="http://movevis.org">`moveVis`</a> provides tools to visualize movement data (e.g. from GPS tracking) and temporal changes of environmental data (e.g. from remote sensing) by creating video animations. It works with <a href="https://github.com/cran/move">`move`</a>, <a href="https://github.com/edzer/sp">`sp`</a> and <a href="https://github.com/rspatial/raster">`raster`</a> class inputs and turns them into <a href="https://github.com/tidyverse/ggplot2">`ggplot2`</a> frames that can be further customized. <a href="http://movevis.org">`moveVis`</a> uses <a href="https://github.com/r-rust/gifski">`gifski`</a> (wrapping the <a href="https://gif.ski">gifski</a> cargo crate) and <a href="https://github.com/ropensci/av">`av`</a> (binding to <a href="https://www.ffmpeg.org/">FFmpeg</a>) to render frames into animated GIF or video files.
+<a href="http://movevis.org">`moveVis`</a> provides tools to visualize movement data (e.g. from GPS tracking) and temporal changes of environmental data (e.g. from remote sensing) by creating video animations. It works with <a href="https://github.com/cran/move">`move`</a> and <a href="https://github.com/rspatial/raster">`raster`</a> class inputs and turns them into <a href="https://github.com/tidyverse/ggplot2">`ggplot2`</a> frames that can be further customized. <a href="http://movevis.org">`moveVis`</a> uses <a href="https://github.com/r-rust/gifski">`gifski`</a> (wrapping the <a href="https://gif.ski">gifski</a> cargo crate) and <a href="https://github.com/ropensci/av">`av`</a> (binding to <a href="https://www.ffmpeg.org/">FFmpeg</a>) to render frames into animated GIF or video files. 
+
+A <a href="https://doi.org/10.1111/2041-210X.13374">peer-reviewed open-access paper</a> accompanying `moveVis` has been published in *Methods in Ecology and Evolution*.
 
 <br>
 <p align="center"><img width="100%" src="https://raw.githubusercontent.com/16EAGLE/AUX_data/master/data/moveVis_readme/examp4.gif"></p>
@@ -150,9 +153,11 @@ These commented `moveVis` code snippets, addressing specific issues or questions
 
 Detailed code examples explaining how to use specific functions are provided at the <a href="http://movevis.org/reference/index.html">function help pages</a>. User contributions such as code examples or tutorials are very welcome and are linked below as soon as they have been spotted somewhere on the web:
 
-<a target="_blank" href = "http://animove.org/wp-content/uploads/2019/04/Daniel_Palacios_animate_moveVis.html">Animating Animal Tracks From Multiple Years Over A Common Year With MoveVis: An Example With Blue Whale Argos Tracks On Movebank</a> by <a target="_blank" href="https://twitter.com/danielequs">Daniel M. Palacios</a>, <a target="_blank" href = "https://mmi.oregonstate.edu/">Marine Mammal Institute</a>, Oregon State University
+<a target="_blank" href = "http://animove.org/wp-content/uploads/2019/04/Daniel_Palacios_animate_moveVis.html">Animating animal tracks from multiple years over a common year with moveVis: An example with Blue Whale Argos tracks on Movebank</a> by <a target="_blank" href="https://twitter.com/danielequs">Daniel M. Palacios</a>, <a target="_blank" href = "https://mmi.oregonstate.edu/">Marine Mammal Institute</a>, Oregon State University
 
-<a target="_blank" href = "https://chirpscholekster.nl/downloads/movevis_example_code.R">Reproducible example of how to combine animal tracking data, tidal water height data and a heightmap to visualize animal movement</a> by <a target="_blank" href="https://twitter.com/hjvdkolk">Henk-Jan van der Kolk</a>, <a target="_blank" href = "https://nioo.knaw.nl/en">The Netherlands Institute of Ecology (NIOO-KNAW)</a>
+<a target="_blank" href = "https://chirpscholekster.nl/downloads/movevis_example_code.R">Reproducible example of how to combine animal tracking data, tidal water height data and a heightmap to visualize animal movement with moveVis</a> by <a target="_blank" href="https://twitter.com/hjvdkolk">Henk-Jan van der Kolk</a>, <a target="_blank" href = "https://nioo.knaw.nl/en">The Netherlands Institute of Ecology (NIOO-KNAW)</a>
+
+<a target="_blank" href = "http://movebankworkshopraleighnc.netlify.com/2019outputfiles/envdatavizanimate">How to build animated tracking maps using tracking data in Movebank and environmental covariates in track and raster annotations from EnvDATA with moveVis</a> by <a target="_blank" href="https://www.ab.mpg.de/person/98230">Sarah C. Davidson</a>, Data Curator at <a target="_blank" href = "https://www.movebank.org/">Movebank</a>
 
 ## Features to be added
 

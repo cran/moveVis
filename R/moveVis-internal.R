@@ -35,6 +35,33 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
   out(paste0("Approximated animation duration: \u2248 ", as.character(dseconds(n.frames/fps)), " at ", toString(fps), " fps for ", toString(n.frames), " frames"))
 }
 
+#' Replace value
+#'
+#' @param data vector to be replaced by values
+#' @param x values which to replace
+#' @param y values to replace to
+#'
+#' @keywords internal
+#' @noRd
+repl_vals <- function(data, x, y){
+  for(i in 1:length(x)) data[data == x[i]] <- y[i]
+  data <- methods::as(data, class(y))
+  return(data)
+}
+
+
+#' interpolate NAs
+#'
+#' @param v vector with NAs to be replaced by interpolated values
+#' @param rule see approxfun
+#'
+#' @keywords internal
+#' @noRd
+.na.approx <- function(v, rule = 2){
+  s <- 1:length(v)
+  stats::approx(x = s[!is.na(v)], y = v[!is.na(v)], rule = rule, xout = s)$y
+}
+
 #' verbose lapply
 #'
 #' @importFrom pbapply pblapply
@@ -65,38 +92,19 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 }
 
 #' split movement by tail length
-#' @importFrom plyr mapvalues
-#' @importFrom sp coordinates
 #' @importFrom move n.indiv timestamps trackId 
-#' 
-#' @importFrom methods as
-#' @importFrom grDevices colours
 #' @noRd 
 .m2df <- function(m, path_colours = NA){
   
   ## create data.frame from m with frame time and colour
-  m.df <- cbind(as.data.frame(coordinates(m)), id = as.numeric(mapvalues(as.character(trackId(m)), unique(as.character(trackId(m))), 1:n.indiv(m))),
+  m.df <- cbind(as.data.frame(m@coords), id = repl_vals(as.character(trackId(m)), unique(as.character(trackId(m))), 1:n.indiv(m)),
         time = timestamps(m), time_chr = as.character(timestamps(m)), name = as.character(trackId(m)))
   colnames(m.df)[1:2] <- c("x", "y")
   
-  ## append data.frame by times missing per track
-  # ts <- unique(m.df$time)
-  # m.df <- do.call(rbind, lapply(unique(m.df$name), function(x){
-  #   df <- m.df[m.df$name == x,]
-  #   dummy <- df[1,]
-  #   dummy[,c("x", "y", "time", "time_chr")] <- NA
-  #   rbind(df, do.call(rbind, lapply(ts[!sapply(ts, function(y) y %in% df$time)], function(z, d = dummy){
-  #     d$time <- z
-  #     d$time_chr <- as.character(z)
-  #     return(d)
-  #   })))
-  # }))
-  
   m.df$frame <- sapply(m.df$time, function(x) which(sort(unique(m.df$time)) == x))
-  # m.df <- m.df[order(m.df$frame),]
   
   ## handle colours, either provided as a field in m or argument or computed randomly
-  m.info <- as(m, "data.frame")
+  m.info <- methods::as(m, "data.frame")
   if(all(!is.character(path_colours), !all(is.na(m.info$colour)))){
     
     ## get colours from column
@@ -105,32 +113,19 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
     if(!is.character(path_colours)){
       
       path_colours <- c("red", "green", "blue", "yellow", "darkgreen", "orange", "deepskyblue", "darkorange", "deeppink", "navy")
-      path_colours <- c(path_colours, sample(colours()[-sapply(path_colours, match, table = colours())]))
+      path_colours <- c(path_colours, sample(grDevices::colours()[-sapply(path_colours, match, table = grDevices::colours())]))
       #path_colours <- sample(rep(path_colours, ceiling(n.indiv(m) / length(path_colours))))
     }
-    m.df$colour <- mapvalues(m.df$id, unique(m.df$id), path_colours[1:n.indiv(m)])
+    m.df$colour <- repl_vals(m.df$id, unique(m.df$id), path_colours[1:n.indiv(m)])
   }
   
-  # if(!is.null(m.info$colour)){
-  #   m.df$colour <- as.character(m.info$colour)
-  # }else{
-  #   if(is.na(path_colours)){
-  #     path_colours <- c("red", "green", "blue", "yellow", "darkgreen", "orange", "deepskyblue", "darkorange", "deeppink", "navy")
-  #     path_colours <- c(path_colours, sample(colours()[-sapply(path_colours, match, table = colours())]))
-  #     path_colours <- rep(path_colours, ceiling(n.indiv(m) / length(path_colours)))
-  #   }
-  #   m.df$colour <- mapvalues(m.df$id, unique(m.df$id), path_colours[1:n.indiv(m)])
-  # }
-  
-  #m.df$colour <- factor(as.character(m.df$colour), level = unique(as.character(m.df$colour)))
   m.df <- m.df[order(m.df$frame),]
   m.df$name <- factor(as.character(m.df$name), levels = unique(as.character(m.df$name)))
   return(m.df)
 }
 
 #' square it
-#' @importFrom geosphere distGeo
-#' @importFrom sf st_bbox st_transform st_as_sfc st_crs
+#' @importFrom sf st_bbox st_transform st_as_sfc st_crs st_distance st_sfc st_point
 #' @noRd 
 .equidistant <- function(ext, margin_factor = 1){
   
@@ -138,11 +133,11 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
   ext.ll <- st_bbox(st_transform(st_as_sfc(ext), st_crs("+init=epsg:4326")))
   
   # calculate corner coordinates
-  corn <- rbind(c(ext.ll[1], ext.ll[2]), c(ext.ll[1], ext.ll[4]), c(ext.ll[3], ext.ll[2]), c(ext.ll[3], ext.ll[4]))
-  colnames(corn) <- c("x", "y")
+  corn <- list(c(ext.ll[1], ext.ll[2]), c(ext.ll[1], ext.ll[4]), c(ext.ll[3], ext.ll[2]), c(ext.ll[3], ext.ll[4]))
+  corn <- lapply(corn, function(x) st_sfc(st_point(x), crs = st_crs("+init=epsg:4326")))
   
   # calculate difference and distance
-  ax.dist <- c(distGeo(corn[1,], corn[3,]), distGeo(corn[1,], corn[2,]))
+  ax.dist <- as.numeric(c(suppressPackageStartupMessages(st_distance(corn[[1]], corn[[3]])), suppressPackageStartupMessages(st_distance(corn[[1]], corn[[2]]))))
   ax.diff <- c(ext.ll[3]-ext.ll[1], ext.ll[4]-ext.ll[2])
   
   # add difference to match equal distances
@@ -168,7 +163,7 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 #' generate extent
 #' @importFrom sf st_bbox st_intersects st_as_sfc
 #' @noRd 
-.ext <- function(m.df, m.crs, ext = NULL, margin_factor = 1.1, equidistant = FALSE){
+.ext <- function(m.df, m.crs, ext = NULL, margin_factor = 1.1, equidistant = FALSE, cross_dateline = FALSE){
   
   ## calcualte ext
   m.ext <- st_bbox(c(xmin = min(m.df$x, na.rm = T), xmax = max(m.df$x, na.rm = T), ymin = min(m.df$y, na.rm = T), ymax = max(m.df$y, na.rm = T)), crs = m.crs)
@@ -182,27 +177,93 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
     gg.ext <- m.ext
   }
   
+  xy.diff <- if(isTRUE(cross_dateline)){
+    c(abs(abs(max(m.df$x[m.df$x < 0])) - min(m.df$x[m.df$x > 0])), gg.ext[4]-gg.ext[2])/2
+  }else (gg.ext[3:4] - gg.ext[1:2])/2
+  
+  
   # squared equidistant extent or not
-  if(isTRUE(equidistant)){
-    gg.ext <- .equidistant(gg.ext, margin_factor = margin_factor)
-  }else{
-    xy.diff <- (gg.ext[3:4] - gg.ext[1:2])/2
-    gg.ext <- st_bbox(c(gg.ext[1:2] - (xy.diff*(-1+margin_factor)), gg.ext[3:4] + (xy.diff*(-1+margin_factor))), crs = m.crs)
+  if(isTRUE(cross_dateline)){
+    
+    # split extents for both dateline sides
+    gg.ext <- list("west" = gg.ext, "east" = gg.ext)
+    
+    # cut extents and add margins to x components
+    gg.ext$west[[1]] <- -180 #xmin
+    gg.ext$west[[3]] <- max(m.df$x[m.df$x < 0]) + xy.diff[1]*(-1+margin_factor) #xmax
+    gg.ext$east[[1]] <- min(m.df$x[m.df$x > 0]) - xy.diff[1]*(-1+margin_factor) #xmin
+    gg.ext$east[[3]] <- 180 #xmax
+    
+    # add margins to y components
+    gg.ext$west[[2]] <- gg.ext$west[[2]] - xy.diff[2]*(-1+margin_factor) #ymin
+    gg.ext$west[[4]] <- gg.ext$west[[4]] + xy.diff[2]*(-1+margin_factor) #ymax
+    gg.ext$east[[2]] <- gg.ext$east[[2]] - xy.diff[2]*(-1+margin_factor) #ymin
+    gg.ext$east[[4]] <- gg.ext$east[[4]] + xy.diff[2]*(-1+margin_factor) #ymax
+    
+  } else{
+    
+    # equidistant currently not supported for cross_dateline
+    if(isTRUE(equidistant)){
+      gg.ext <- .equidistant(gg.ext, margin_factor = margin_factor)
+    }else{
+      gg.ext <- st_bbox(c(gg.ext[1:2] - (xy.diff*(-1+margin_factor)), gg.ext[3:4] + (xy.diff*(-1+margin_factor))), crs = m.crs)
+    }
+    
+    # cut by longlat maximums
+    if(isTRUE(m.crs$epsg == 4326)){
+      if(gg.ext[1] < -180) gg.ext[1] <- -180
+      if(gg.ext[3] > 180) gg.ext[3] <- 180
+      if(gg.ext[2] < -90) gg.ext[2] <- -90
+      if(gg.ext[4] > 90) gg.ext[4] <- 90
+    }
   }
-  
-  # cut by longlat maximums
-  if(isTRUE(m.crs$epsg == 4326)){
-    if(gg.ext[1] < -180) gg.ext[1] <- -180
-    if(gg.ext[3] > 180) gg.ext[3] <- 180
-    if(gg.ext[2] < -90) gg.ext[2] <- -90
-    if(gg.ext[4] > 90) gg.ext[4] <- 90
-  }
-  
   return(gg.ext)
 }
 
+#' calculate x labels from breaks
+#' @noRd 
+.x_labels <- function(x){
+  x.num <- x
+  
+  # remove NAs
+  which.na <- is.na(x.num)
+  x.num[is.na(x.num)] <- 0
+  
+  # shift dateline crossings
+  x.num[x.num < -180] <- x.num[x.num < -180]+360
+  x.num[x.num > 180] <- x.num[x.num > 180]-360
+  
+  x <- as.character(abs(x.num))
+  x <- paste0('"', x, '"', "*degree")
+  x[which.na] <- ""
+  
+  # assign Northing/Southing
+  x[x.num > 0] <- paste0(x[x.num > 0], "*E")
+  x[x.num < 0] <- paste0(x[x.num < 0], "*W")
+  return(parse(text=x))
+}
+
+#' calculate y labels from breaks
+#' @noRd 
+.y_labels <- function(x){
+  x.num <- x
+  
+  # remove NAs
+  which.na <- is.na(x.num)
+  x.num[is.na(x.num)] <- 0
+  
+  x <- as.character(abs(x.num))
+  x <- paste0('"', x, '"', "*degree")
+  x[which.na] <- ""
+  
+  # assign Northing/Southing
+  x[x.num > 0] <- paste0(x[x.num > 0], "*N")
+  x[x.num < 0] <- paste0(x[x.num < 0], "*S")
+  return(parse(text=x))
+}
+
+
 #' create paths data.frame for gg on the fly per frame
-#' @importFrom grDevices colorRampPalette
 #' @noRd 
 .df4gg <- function(m.df, i, tail_length = 0, path_size = 1, tail_size = 1, tail_colour = "white", trace_show = F, trace_colour = "grey", path_fade = F){
   
@@ -225,18 +286,18 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
     if(all(isTRUE(path_fade), diff.max < tail_length, paths.size > diff.max)){
       n <- diff.max+1
       v <- rep(tail_colour, (paths.size-(n)))
-      paths.cols <- tail(paths.cols, n = n)
+      paths.cols <- utils::tail(paths.cols, n = n)
     } else{
       n <- paths.size
       v <- NULL
     }
     
     paths.ramps <- lapply(unique(paths.cols), function(x){
-      f <- colorRampPalette(c(x, tail_colour))
+      f <- grDevices::colorRampPalette(c(x, tail_colour))
       rev(f(n+4)[1:n])
     })
     
-    c(v, mapply(i = 1:n, i.ramp = as.numeric(mapvalues(paths.cols, unique(paths.cols), 1:length(unique(paths.cols)))), function(i, i.ramp){
+    c(v, mapply(i = 1:n, i.ramp = repl_vals(paths.cols, unique(paths.cols), 1:length(unique(paths.cols))), function(i, i.ramp){
       paths.ramps[[i.ramp]][i]
     }, USE.NAMES = F))
     
@@ -272,8 +333,8 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 }
 
 #' spatial plot function
-#' @importFrom ggplot2 geom_path aes_string theme scale_fill_identity scale_y_continuous scale_x_continuous scale_colour_manual theme_bw guides guide_legend coord_sf expr
-#' @importFrom RStoolbox ggRGB ggR
+#' @importFrom ggplot2 ggplot geom_path aes_string theme scale_fill_identity scale_y_continuous scale_x_continuous scale_colour_manual theme_bw guides guide_legend coord_sf expr geom_raster geom_tile
+#' @importFrom raster aggregate ncell
 #' @noRd 
 .gg_spatial <- function(r_list, r_type, m.df, path_size = 3, path_end = "round", path_join = "round", path_alpha = 1, equidistant = T, 
                         path_mitre = 10, path_arrow = NULL, print_plot = T, path_legend = T, path_legend_title = "Names",
@@ -296,12 +357,9 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
     
     ## base plot
     p <- p + geom_path(data = x_path, aes_string(x = "x", y = "y", group = "id"), size = x_path$tail_size, lineend = path_end, linejoin = path_join,
-                       linemitre = path_mitre, arrow = path_arrow, colour = x_path$tail_colour, alpha = path_alpha, na.rm = T) +  theme_bw() + x$coord_sf[[1]]
-      #coord_sf(xlim = c(gg.ext$xmin, gg.ext$xmax), ylim = c(gg.ext$ymin, gg.ext$ymax), expand = F, crs = m.crs, datum = m.crs, clip = "on")
-    #scale_y_continuous(expand = c(0,0), limits = c(gg.ext$ymin, gg.ext$ymax)) + 
-    #scale_x_continuous(expand = c(0,0), limits = c(gg.ext$xmin, gg.ext$xmax)) +
+                       linemitre = path_mitre, arrow = path_arrow, colour = x_path$tail_colour, alpha = path_alpha, na.rm = T) + 
+      theme_bw() + x$coord[[1]] + x$scalex[[1]] + x$scaley[[1]]
     
-   
     ## add legend?
     if(isTRUE(path_legend)){
       l.df <- cbind.data.frame(x = x[1,]$x, y = x[1,]$y, name = levels(m.df$name),
@@ -317,11 +375,54 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
   }
   
   # create base maps
-  gg.bmap <- function(y, r_type, ...){
-    if(r_type == "gradient") y <- ggR(y, ggObj = T, geom_raster = T, coord_equal = F, ...)
-    if(r_type == "discrete") y <- ggR(y, ggObj = T, geom_raster = T, coord_equal = F, forceCat = T, ...) 
-    if(r_type == "RGB") y <- ggRGB(y, r = 1, g = 2, b = 3, ggObj = T, geom_raster = T, coord_equal = F, ...)
-    return(y)
+  gg.bmap <- function(r, r_type, ...){
+    extras <- list(...)
+    if(!is.null(extras$maxpixels)) maxpixels <- extras$maxpixels else maxpixels <- 500000
+    if(!is.null(extras$alpha)) alpha <- extras$alpha else alpha <- 1
+    if(!is.null(extras$maxColorValue)) maxColorValue <- extras$maxColorValue else maxColorValue <- NA
+    
+    # aggregate raster if too large
+    if(maxpixels < ncell(r)) r <- aggregate(r, fact = ceiling(ncell(r)/maxpixels))
+    
+    # transform into data.frame
+    df <- data.frame(raster::as.data.frame(r, xy = T))
+    colnames(df) <- c("x", "y", paste0("val", 1:(ncol(df)-2)))
+    
+    # factor if discrete to show categrocial legend
+    df$fill <- df$val1
+    if(r_type == "discrete") df$fill <- as.factor(df$fill)
+    
+    # transform to RGB colours
+    if(r_type == "RGB"){
+      if(is.na(maxColorValue)) maxColorValue <- max(c(df$val1, df$val2, df$val3), na.rm = T)
+      
+      if(maxColorValue < max(c(df$val1, df$val2, df$val3), na.rm = T)){
+        out("maxColorValue < maximum raster value. maxColorValue is set to maximum raster value.", type = 2)
+        maxColorValue <- max(c(df$val1, df$val2, df$val3), na.rm = T)
+      }
+      
+      # remove NAs
+      na.sel <- is.na(df$val1) & is.na(df$val2) & is.na(df$val3)
+      if(any(na.sel)) df <- df[!na.sel,]
+      
+      df$fill <- grDevices::rgb(red = df$val1, green = df$val2, blue = df$val3, maxColorValue = maxColorValue)
+    } else{
+      
+      # remove NAs
+      na.sel <- is.na(df$val1)
+      if(any(na.sel)) df <- df[!na.sel,]
+    }
+    gg <- ggplot(df)
+    
+    # if NA gaps are there, use geom_tile, otherwise make it fast using geom_raster
+    if(any(na.sel)){
+      gg <- gg + geom_tile(aes_string(x = "x", y = "y", fill = "fill"), alpha = alpha)
+    } else{
+      gg <- gg + geom_raster(aes_string(x = "x", y = "y", fill = "fill"), alpha = alpha)
+    }
+    
+    if(r_type == "RGB") gg <- gg + scale_fill_identity() 
+    return(gg)
   }
   
   # create frames
@@ -329,9 +430,9 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
   if(length(r_list) > 1){
     frames <- .lapply(1:max(m.df$frame), function(i) gg.fun(x = .df4gg(m.df, i = i, tail_length = tail_length, path_size = path_size, tail_size = tail_size, tail_colour = tail_colour,
                                                                        trace_show = trace_show, trace_colour = trace_colour, path_fade = path_fade),
-                                                            y = gg.bmap(r_list[[i]], r_type, ...)), moveVis.n_cores = 1)
+                                                            y = gg.bmap(r = r_list[[i]], r_type, ...)), moveVis.n_cores = 1)
   } else{
-    bmap <- gg.bmap(r_list[[1]], r_type, ...)
+    bmap <- gg.bmap(r = r_list[[1]], r_type, ...)
     frames <- .lapply(1:max(m.df$frame), function(i) gg.fun(x = .df4gg(m.df, i = i, tail_length = tail_length, path_size = path_size, tail_size = tail_size, tail_colour = tail_colour, 
                                                                        trace_show = trace_show, trace_colour = trace_colour, path_fade = path_fade),
                                                             y = bmap), moveVis.n_cores = 1)
@@ -418,7 +519,7 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 #' @noRd 
 .time_conform <- function(m){
   
-  m.indi <- if(inherits(m, "MoveStack")) split(m) else list(m)
+  m.indi <- if(inherits(m, "MoveStack")) move::split(m) else list(m)
   ts <- .lapply(m.indi, timestamps, moveVis.verbose = F)
   tl <- .lapply(m.indi, timeLag, unit = "secs", moveVis.verbose = F)
   
@@ -449,47 +550,106 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
   # sapply(ts.dl, function(x) x > 1)
 }
 
+#' combine two extents into one
+#' @noRd 
+.combine_ext <- function(ext.both){
+  ext.combi <- ext.both[[1]]
+  ext.combi@xmin <- min(c(ext.both[[1]]@xmin, ext.both[[2]]@xmin))
+  ext.combi@xmax <- max(c(ext.both[[1]]@xmax, ext.both[[2]]@xmax))
+  return(ext.combi)
+}
+
+#' expand two extents by the one with larger x range
+#' @noRd 
+.expand_ext <- function(ext.both, rg){
+  if(which.min(rg) == 1){
+    ext.both[[which.min(rg)]]@xmin <- -180+ext.both[[which.min(rg)]]@xmin-180
+    ext.both[[which.min(rg)]]@xmax <- -180+ext.both[[which.min(rg)]]@xmax-180
+  } else{
+    ext.both[[which.max(rg)]]@xmin <- 180+ext.both[[which.max(rg)]]@xmin+180
+    ext.both[[which.max(rg)]]@xmax <- 180+ext.both[[which.max(rg)]]@xmax+180
+  }
+  return(ext.both)
+}
+
+#' shift two extents by 180 lon degrees
+#' @noRd 
+.shift_ext <- function(ext.both){
+  
+  shift <- function(x) if(x >= 0) x-180 else x +180
+  
+  lapply(ext.both, function(x){
+    x@xmin <- shift(x@xmin)
+    x@xmax <- shift(x@xmax)
+    return(x)
+  })
+}
+
 #' get map
 #' @importFrom slippymath bbox_to_tile_grid compose_tile_grid
-#' @importFrom curl curl_download
-#' @importFrom raster projectRaster extent res res<- projectExtent
+#' @importFrom raster projectRaster extent extent<- resample extend merge
 #' @importFrom magick image_read image_write image_convert
+#' @importFrom curl curl_download
 #' @noRd 
 .getMap <- function(gg.ext, map_service, map_type, map_token, map_dir, map_res, m.crs){
   
+  if(inherits(gg.ext, "bbox")) gg.ext <- list(gg.ext)
+  
   ## calculate needed slippy tiles using slippymath
-  gg.ext.ll <- st_bbox(st_transform(st_as_sfc(gg.ext), crs = st_crs("+init=epsg:4326")))
-  tg <- bbox_to_tile_grid(gg.ext.ll, max_tiles = ceiling(map_res*20))
-  images <- .apply(tg$tiles, MARGIN = 1, function(x){
-    file <- paste0(map_dir, map_service, "_", map_type, "_", x[1], "_", x[2], ".png")
-    
-    retry <- list(do = TRUE, count = 0)
-    while(retry$do){
+  r <- lapply(gg.ext, function(y){
+    gg.ext.ll <- st_bbox(st_transform(st_as_sfc(y), crs = st_crs("+init=epsg:4326")))
+    tg <- bbox_to_tile_grid(gg.ext.ll, max_tiles = ceiling(map_res*20))
+    images <- .apply(tg$tiles, MARGIN = 1, function(x){
+      file <- paste0(map_dir, map_service, "_", map_type, "_", x[1], "_", x[2], ".png")
       
-      ## download tiles
-      url <- paste0(getOption("moveVis.map_api")[[map_service]][[map_type]], tg$zoom, "/", x[1], "/", x[2], ".png", if(map_service == "mapbox") paste0("?access_token=", map_token) else NULL)
-      if(!file.exists(file)) curl_download(url = url, destfile = file)
-      
-      # test if file can be loaded
-      catch <- try(image_read(file), silent = T)
-      if(inherits(catch, "try-error")){
-        unlink(file)
-        retry$count <- retry$count+1
-        if(retry$count < 10) retry$do <- TRUE else out(paste0("Base map download failed: ", catch), type = 3)
-      } else{
-        retry$do <- FALSE
+      retry <- list(do = TRUE, count = 0)
+      while(retry$do){
+        
+        ## download tiles
+        url <- paste0(getOption("moveVis.map_api")[[map_service]][[map_type]], tg$zoom, "/", x[1], "/", x[2], ".png", if(map_service == "mapbox") paste0("?access_token=", map_token) else NULL)
+        if(!file.exists(file)) curl_download(url = url, destfile = file) #utils::download.file(url = url, destfile = file, quiet = T) 
+        
+        # test if file can be loaded
+        catch <- try(image_read(file), silent = T)
+        if(inherits(catch, "try-error")){
+          unlink(file)
+          retry$count <- retry$count+1
+          if(retry$count < 10) retry$do <- TRUE else out(paste0("Base map download failed: ", catch), type = 3)
+        } else{
+          retry$do <- FALSE
+        }
       }
-    }
+      
+      ## covnert imagery
+      image_write(image_convert(image_read(file), format = "PNG24"), file) # convert single channel png to multi channel png
+      return(file)
+    })
     
-    ## covnert imagery
-    image_write(image_convert(image_read(file), format = "PNG24"), file) # convert single channel png to multi channel png
-    return(file)
+    ## composite imagery
+    r <- quiet(compose_tile_grid(tg, images))
+    crop(projectRaster(r, crs = m.crs), extent(y[1], y[3], y[2], y[4]), snap = "out")
   })
   
-  ## composite imagery
-  r <- compose_tile_grid(tg, images)
-  list(crop(projectRaster(r, crs = m.crs), extent(gg.ext[1], gg.ext[3], gg.ext[2], gg.ext[4]), snap = "out"))
+  if(length(r) > 1){
+    
+    # extend over dateline
+    ext.both <- list(east = extent(r$east), west = extent(r$west))
+    rg <- c("east"= diff(c(ext.both$east@xmin, ext.both$east@xmax)), "west" = diff(c(ext.both$west@xmin, ext.both$west@xmax)))
+    
+    ext.both <- .expand_ext(ext.both, rg)
+    #ext.both <- .shift_ext(ext.both)
+    extent(r$east) <- ext.both$east
+    extent(r$west) <- ext.both$west
+    
+    # extend lower res raster, resample higher res raster and merge both
+    ext.combi <- .combine_ext(ext.both)
+    
+    r[[which.min(rg)]] <- extend(r[[which.min(rg)]], ext.combi)
+    r[[which.max(rg)]] <- resample(r[[which.max(rg)]], r[[which.min(rg)]])
+    r <- list(merge(r[[1]], r[[2]]))
+  }
   
+  return(r)
   #projectRaster produces hidden warnings:
   # no non-missing arguments to max; returning -Inf
   # no non-missing arguments to min; returning -Inf
@@ -497,8 +657,6 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 }
 
 #' create interpolated layer by frame position
-#' @importFrom utils head tail
-#' @importFrom parallel clusterExport
 #' @importFrom raster clusterR overlay brick unstack stack
 #' @noRd
 .int2frames <- function(r_list, pos, frames, n.rlay, cl){
@@ -506,15 +664,15 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
   # get frames outside shoulders not to be interpolated
   r.frames <- rep(list(NULL), length(frames))
   names(r.frames) <- frames
-  early <- as.numeric(names(r.frames)) < head(pos, n=1)
-  if(any(early)) r.frames[early] <- head(r_list, n=1)
+  early <- as.numeric(names(r.frames)) < utils::head(pos, n=1)
+  if(any(early)) r.frames[early] <- utils::head(r_list, n=1)
   
-  late <- as.numeric(names(r.frames)) > tail(pos, n=1)
-  if(any(late)) r.frames[late] <- tail(r_list, n=1)
+  late <- as.numeric(names(r.frames)) > utils::tail(pos, n=1)
+  if(any(late)) r.frames[late] <- utils::tail(r_list, n=1)
   
   exist <- match(as.numeric(names(r.frames)), pos)
   if(any(!is.na(exist))){
-    r.frames[!is.na(exist)] <- r_list[na.omit(exist)]
+    r.frames[!is.na(exist)] <- r_list[stats::na.omit(exist)]
   }
   
   # collect remaining frame ids
@@ -529,7 +687,8 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
   i.frames <- i.frames[i.rasters-1]
   
   # interpolation function
-  v.fun <- function(v.x, v.y, ...) t(mapply(xx = v.x, yy = v.y, FUN = function(xx, yy, ...) zoo::na.approx(c(xx, v.na, yy), rule = 2)[pos.frames], SIMPLIFY = T))
+  v.fun <- function(v.x, v.y, ...) t(mapply(xx = v.x, yy = v.y, FUN = function(xx, yy, ...) .na.approx(c(xx, v.na, yy))[pos.frames], SIMPLIFY = T))
+  #v.fun <- function(v.x, v.y, ...) t(mapply(xx = v.x, yy = v.y, FUN = function(xx, yy, ...) zoo::na.approx(c(xx, v.na, yy), rule = 2)[pos.frames], SIMPLIFY = T))
   #v.fun <- function(v.x, v.y) mapply(xx = v.x, yy = v.y, FUN = function(xx, yy, xx.pos = x.pos, yy.pos = y.pos, xy.frame = frame) zoo::na.approx(c(xx, rep(NA, (yy.pos-xx.pos)-1), yy))[(xy.frame-xx.pos)+1], SIMPLIFY = T)
   #v.fun <- Vectorize(function(x, y, ...) zoo::na.approx(c(x, v.na, y), rule = 2)[pos.frame])
   
@@ -550,7 +709,7 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
     y.pos <- pos[i]
     v.na <- rep(NA, (y.pos-x.pos)-1)
     pos.frames <- (i.frames[[which(i.rasters == i)]]-x.pos)+1
-    if(getOption("moveVis.n_cores") > 1) clusterExport(cl, c("v.na", "pos.frames"), envir = environment())
+    if(getOption("moveVis.n_cores") > 1) parallel::clusterExport(cl, c("v.na", "pos.frames"), envir = environment())
     
     # interpolate layer-wise
     r <- lapply(1:length(x), function(i.layer){
@@ -574,7 +733,6 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 
 #' assign raster to frames
 #' @importFrom raster nlayers crop extent brick writeRaster dataType
-#' @importFrom parallel makeCluster stopCluster
 #' @noRd
 .rFrames <- function(r_list, r_times, m.df, gg.ext, fade_raster = T, crop_raster = T, ...){
   
@@ -606,7 +764,7 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
       pos.df <- pos.df[apply(diff.df[,unique(pos.df[,2])], MARGIN = 2, which.min),]
       
       # start cluster and interpolate over all frames or badge-wise
-      if(getOption("moveVis.n_cores") > 1) cl <- makeCluster(getOption("moveVis.n_cores"))
+      if(getOption("moveVis.n_cores") > 1) cl <- parallel::makeCluster(getOption("moveVis.n_cores"))
       if(isFALSE(getOption("moveVis.frames_to_disk"))){
         r_list <- .int2frames(r_list, pos = pos.df$frame, frames = unique(m.df$frame), n.rlay = n.rlay, cl = cl)
       } else{
@@ -630,7 +788,7 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
         # link to files
         r_list <- lapply(files, brick)
       }
-      if(getOption("moveVis.n_cores") > 1) stopCluster(cl)
+      if(getOption("moveVis.n_cores") > 1) parallel::stopCluster(cl)
     }else{
       r_list <- r_list[pos.df$pos_r]
     }
@@ -656,6 +814,9 @@ out <- function(input, type = 1, ll = NULL, msg = FALSE, sign = "", verbose = ge
 #' @importFrom pbapply pboptions
 #' @noRd 
 .onLoad <- function(libname, pkgname){
+  catch <- try(lwgeom::lwgeom_extSoftVersion()) # lwgeom is needed for st_distance, but no import of sf.
+  # Importing an lwgeom function here to avoid NOTE on missing imports
+  
   pboptions(type = "timer", char = "=", txt.width = getOption("width")-30) # can be changed to "none"
   if(is.null(getOption("moveVis.verbose")))  options(moveVis.verbose = FALSE)
   if(is.null(getOption("moveVis.n_cores")))  options(moveVis.n_cores = 1)

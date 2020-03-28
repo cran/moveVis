@@ -3,7 +3,7 @@ context("frames_spatial")
 
 test_that("frames_spatial (default maps)", {
   # correct call
-  frames <- expect_length(expect_is(frames_spatial(m.aligned, verbose = F, map_res = 0.1), "list"), 180)
+  frames <- expect_length(expect_is(frames_spatial(m = m.aligned, verbose = F, map_res = 0.1), "list"), 180)
   expect_is(frames[[1]], "ggplot")
   
   # false calls
@@ -24,6 +24,7 @@ if(isTRUE(test_maps)){
   test_that("frames_spatial (test all map types)", {
   
     frames_types <- lapply(test_services, function(service) lapply(get_maptypes(service), function(x, s = service){
+      #tryCatch({
       cat(paste0(" ", s, ": ", x, "\n"))
       frames <- frames_spatial(m.aligned, map_service = s, map_type = x, map_token = Sys.getenv("moveVis_map_token"),
                                map_dir = test_dir, verbose = F)
@@ -31,6 +32,7 @@ if(isTRUE(test_maps)){
       expect_length(frames, 180)
       expect_is(frames[[1]], "ggplot")
       return(frames[[100]])
+      #})
     }))
   })
 }
@@ -95,7 +97,12 @@ test_that("frames_spatial (different extent/proj settings)", {
 
   # other projections
   frames <- lapply(c("+init=epsg:32632", "+init=epsg:3857"), function(p){
-    m <- sp::spTransform(m, raster::crs(p))
+    
+    # transform using sf
+    m_tf <- sf::st_transform(sf::st_as_sf(m), sf::st_crs(p))
+    m_tf <- cbind.data.frame(sf::st_coordinates(m_tf), time = m_tf$time, id = move::trackId(m))
+    m <- df2move(m_tf, proj = p, x = "X", y = "Y", time = "time", track_id = "id")
+    
     frames <- expect_length(expect_is(frames_spatial(m.aligned, map_service = "osm", map_type = get_maptypes("osm")[1], map_res = 0.1, equidistant = F, verbose = F), "list"), 180)
     expect_is(frames[[1]], "ggplot")
     frames[[100]]
@@ -104,5 +111,14 @@ test_that("frames_spatial (different extent/proj settings)", {
   # false calls
   expect_error(frames_spatial(m.aligned, map_res = 0.1, ext = "abc", verbose = F))
   expect_warning(frames_spatial(m.aligned, map_res = 0.1, ext = raster::extent(m.aligned)*0.1, verbose = F))
+  
+})
+
+test_that("frames_spatial (cross_dateline)", {
+  
+  frames <- expect_length(expect_is(frames_spatial(m.shifted, map_service = "carto", map_type = "light",
+                                                   verbose = F, cross_dateline = T), "list"), 180)
+  frames <- expect_warning(frames_spatial(m.shifted.repro, verbose = F, cross_dateline = T))
+  frames <- expect_error(frames_spatial(m.shifted, r_list = r_grad, r_times = r_times, r_type = "gradient", verbose = F, cross_dateline = T))
   
 })

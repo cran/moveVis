@@ -1,7 +1,26 @@
 ***
 
+## moveVis 0.10.5
+Revised distance calculations & handling of dateline crossings. Latest CRAN version.
+
+**New features:**
+
+* Argument `cross_dateline` of `frames_spatial` to indicate that unprojected tracks in lon/lat cross the dateline. Instead of clipping frames at longitudes -180 and 180, `moveVis` extends frames and connects tracks across the dateline.
+* Distance calculations are now based on `lwgeom`
+* Refined base map plotting (see additional arguments `...` of `frames_spatial` for available options)
+* Added `NA` handling for base maps (e.g. rasterized labels)
+* Dropped dependencies
+
+**Bug fixes:**
+
+* Minor errors and warnings caused by reverse dependency changes of package `sf`
+
+<br>
+
+***
+
 ## moveVis 0.10.4-1
-Bug patch. Latest CRAN version.
+Bug patch. Released on CRAN: 2020-02-12
 
 **Bug fixes:**
 

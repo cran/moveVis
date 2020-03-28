@@ -23,6 +23,7 @@
 #' @param tail_colour character, colour of the last tail element, to which the path colour is faded. Default is "white".
 #' @param trace_show logical, whether to show the trace of the complete path or not.
 #' @param trace_colour character, colour of the trace. Default is "white". It is recommended to define the same colours for both \code{trace_colour} and  \code{tail_colour} to enforce an uninterrupted colour transition form the tail to the trace.
+#' @param cross_dateline logical, whether tracks are crossing the dateline (longitude 180/-180) or not. If \code{TRUE}, frames are expanded towards the side of the dateline that is smaller in space. Applies only if the CRS of \code{m} is not projected (geographical, lon/lat). If \code{FALSE} (default), frames are clipped at the minimum and maximum longitudes and tracks cannot cross.
 #' @param margin_factor numeric, factor relative to the extent of \code{m} by which the frame extent should be increased around the movement area. Ignored, if \code{ext} is set.
 #' @param equidistant logical, whether to make the map extent equidistant (squared) with y and x axis measuring equal distances or not. Especially in polar regions of the globe it might be necessaray to set \code{equidistant} to \code{FALSE} to avoid strong stretches. By default (\code{equidistant = NULL}), equidistant is set automatically to \code{FALSE}, if \code{ext} is set, otherwise \code{TRUE}. Read more in the details.
 #' @param ext \code{sf bbox} or \code{sp extent} in same CRS as \code{m}, optional. If set, frames are cropped to this extent. If not set, a squared extent around \code{m}, optional with a margin set by \code{margin_factor}, is used (default).
@@ -33,13 +34,11 @@
 #' @param map_dir character, directory where downloaded basemap tiles can be stored. By default, a temporary directory is used. 
 #' If you use moveVis often for the same area it is recommended to set this argument to a directory persistent throughout sessions (e.g. in your user folder), 
 #' so that baesmap tiles that had been already downloaded by moveVis do not have to be requested again.
-#' @param ... Additional arguments customizing the frame background, passed to \code{RStoolbox::ggR} or \code{RStoolbox::ggRGB}:
+#' @param ... Additional arguments customizing the frame background:
 #'    \itemize{
 #'        \item \code{alpha}, numeric, background transparency (0-1).
-#'        \item \code{hue}, numeric, hue value for color calculation (0-1). Change if you need anything else than greyscale. Only effective if sat > 0.
-#'        \item \code{sat}, numeric, saturation value for color calculation (0,1). Change if you need anything else than greyscale.
-#'        \item \code{stretch}, character, either 'none', 'lin', 'hist', 'sqrt' or 'log' for no stretch, linear, histogram, square-root or logarithmic stretch.
-#'        \item \code{quantiles}, numeric vector with two elements, min and max quantiles to stretch to. Defaults to 2% stretch, i.e. \code{c(0.02,0.98)}.
+#'        \item \code{maxpixels}, maximum number of pixels to be plotted per frame. Defaults to 500000. Reduce to decrease detail and increase rendering speeds.
+#'        \item \code{macColorValue}, numeric, only relevant for RGB backgrounds (i.e. if \code{r_type = "RGB"} or if a default base map is used). Maximum colour value (e.g. 255). Defaults to maximum raster value.
 #'    }
 #' @param verbose logical, if \code{TRUE}, messages and progress information are displayed on the console (default).
 #' 
@@ -56,7 +55,6 @@
 #' 
 #' @importFrom raster compareCRS nlayers
 #' @importFrom sf st_crs
-#' @importFrom sp proj4string
 #' @importFrom raster crs
 #' @importFrom move n.indiv moveStack
 #' 
@@ -154,17 +152,13 @@
 
 frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient", fade_raster = FALSE, crop_raster = TRUE, map_service = "osm", map_type = "streets", map_res = 1, map_token = NULL, map_dir = NULL,
                            margin_factor = 1.1, equidistant = NULL, ext = NULL, path_size = 3, path_end = "round", path_join = "round", path_mitre = 10, path_arrow = NULL, path_colours = NA, path_alpha = 1, path_fade = FALSE,
-                           path_legend = TRUE, path_legend_title = "Names", tail_length = 19, tail_size = 1, tail_colour = "white", trace_show = FALSE, trace_colour = "white", ..., verbose = TRUE){
+                           path_legend = TRUE, path_legend_title = "Names", tail_length = 19, tail_size = 1, tail_colour = "white", trace_show = FALSE, trace_colour = "white", cross_dateline = FALSE, ..., verbose = TRUE){
   
   ## check input arguments
   if(inherits(verbose, "logical")) options(moveVis.verbose = verbose)
   if(all(!c(inherits(m, "MoveStack"), inherits(m, "Move")))) out("Argument 'm' must be of class 'Move' or 'MoveStack'.", type = 3)
   if(inherits(m, "Move")) m <- moveStack(m)
   
-  ## check m time conformities
-  out("Checking temporal alignment...")
-  .time_conform(m)
-
   if(!is.null(r_list)){
     if(all(!is.list(r_list), inherits(r_list, "Raster"))) r_list <- list(r_list)
     if(any(!sapply(r_list, compareCRS, y = m))) out("Projections of 'm' and 'r_list' differ.", type = 3)
@@ -201,21 +195,59 @@ frames_spatial <- function(m, r_list = NULL, r_times = NULL, r_type = "gradient"
   if(is.null(equidistant)) if(is.null(ext)) equidistant <- TRUE else equidistant <- FALSE
   if(!is.logical(equidistant)) out("Argument 'equidistant' must be of type 'logical'.", type = 3)
   
+  if(all(as.integer(st_crs(m)$epsg) != as.integer(4326), isTRUE(cross_dateline), na.rm = T)){
+    out("Argument 'cross_dateline' is ignored, since the coordinate reference system of 'm' is not geographical (long/lat).", type = 2)
+    cross_dateline <- FALSE
+  }
+  if(all(isTRUE(cross_dateline), !is.null(r_list))) out("Argument 'cross_dateline' only works with default base maps. Arguments 'r_list' and 'r_times' cannot be used, if cross_dateline = TRUE.\nTip: Reproject 'm' to another CRS that better suits the region if you want to use 'r_list' with tracks crossing the dateline.", type = 3)
+  if(isTRUE(cross_dateline)) equidistant <- FALSE
+  
+  ## check m time conformities
+  out("Checking temporal alignment...")
+  .time_conform(m)
+  
   ## preprocess movement data
   out("Processing movement data...")
   m.df <- .m2df(m, path_colours = path_colours) # create data.frame from m with frame time and colour
   .stats(n.frames = max(m.df$frame))
   
-  gg.ext <- .ext(m.df, m.crs = st_crs(proj4string(m)), ext, margin_factor, equidistant) # calcualte extent
+  gg.ext <- .ext(m.df, m.crs = st_crs(m), ext, margin_factor, equidistant, cross_dateline) # calcualte extent
   
-  m.df$coord_sf <- list(ggplot2::coord_sf(xlim = c(gg.ext$xmin, gg.ext$xmax), ylim = c(gg.ext$ymin, gg.ext$ymax),
-                                          expand = F, crs = proj4string(m), datum = proj4string(m), clip = "on"))
+  ## shift coordinates crossing dateline
+  if(isTRUE(cross_dateline)){
+    rg <- c("pos" = diff(range(m.df$x[m.df$x >= 0])), "neg" = diff(range(m.df$x[m.df$x < 0])))
+    if(which.max(rg) == 1){
+      m.df$x[m.df$x < 0] <- 180+m.df$x[m.df$x < 0]+180
+    } else{
+      m.df$x[m.df$x >= 0] <- -180+m.df$x[m.df$x >= 0]-180
+    }
+  }  
   
   ## calculate tiles and get map imagery
   if(is.null(r_list)){
     out("Retrieving and compositing basemap imagery...")
     r_list <- .getMap(gg.ext, map_service, map_type, map_token, map_dir, map_res, m.crs = crs(m))
     r_type <- "RGB"
+  }
+  
+  # calculate frames extents and coord labes
+  if(isTRUE(cross_dateline)){
+    # calculate extent shifted across dateline
+    gg.ext <- .combine_ext(.expand_ext(list(extent(gg.ext$east[[1]], gg.ext$east[[3]], gg.ext$east[[2]], gg.ext$east[[4]]),
+                                            extent(gg.ext$west[[1]], gg.ext$west[[3]], gg.ext$west[[2]], gg.ext$west[[4]])), rg))
+    gg.ext <- st_bbox(c(xmin = gg.ext@xmin, xmax = gg.ext@xmax, ymin = gg.ext@ymin, ymax = gg.ext@ymax), crs = st_crs(m))
+    
+    # use coord_equal for dateline crossingngs in EPSG:4326 only
+    m.df$coord <- list(ggplot2::coord_sf(xlim = c(gg.ext$xmin, gg.ext$xmax), ylim = c(gg.ext$ymin, gg.ext$ymax),
+                                         expand = F, clip = "on"))
+    m.df$scalex <- list(ggplot2::scale_x_continuous(labels = .x_labels))
+    m.df$scaley <- list(ggplot2::scale_y_continuous(labels = .y_labels))
+  } else{
+    
+    # use coord_sf for all other cases
+    m.df$coord <- list(ggplot2::coord_sf(xlim = c(gg.ext$xmin, gg.ext$xmax), ylim = c(gg.ext$ymin, gg.ext$ymax),
+                                         expand = F, crs = st_crs(m)$proj4string, datum = st_crs(m)$proj4string, clip = "on"))
+    m.df$scaley <- m.df$scalex <- NULL
   }
   
   out("Assigning raster maps to frames...")
